@@ -1,0 +1,350 @@
+import QtQuick
+import QtQuick.Controls as QQC2
+import QtQuick.Templates as T
+import Harbour
+
+// A stack's contents, newest first, as macOS shows them: a fan of files arcing up
+// from the stack (the default), a glass grid, or a plain list (a KDE menu).
+//
+// A Menu with custom content rather than a Popup: on Wayland a window popup's x/y
+// are ignored, and only Menu reliably anchors to its parent item (see DockMenu).
+// The unstyled template, since the desktop style's Menu expects a list of items.
+T.Menu {
+    id: stackPopup
+
+    required property Item dock
+    required property StackIcon stack
+
+    readonly property string mode: stack.view === "grid" || stack.view === "list" ? stack.view : "fan"
+
+    // Read once, synchronously, when the popup opens: the layout depends on the count.
+    readonly property var entries: DockTools.folderEntries(stack.folderUrl, mode === "fan" ? fanLimit : 120)
+    readonly property int entryCount: entries.length
+
+    // Fan geometry. Items rise from the stack along a gentle arc of radius fanRadius,
+    // curving right and tilting as they go, like macOS.
+    readonly property int fanLimit: 12
+    readonly property real fanIcon: Math.round(dock.iconSize * 0.86)
+    readonly property real fanStep: fanIcon + 8
+    readonly property real fanRadius: 2600
+    readonly property real fanWidth: 640
+
+    readonly property int gridColumns: Math.max(1, Math.min(5, entryCount))
+    readonly property int gridRows: Math.max(1, Math.min(3, Math.ceil(entryCount / gridColumns)))
+    readonly property real gridCell: 104
+
+    readonly property real contentWidth_: mode === "fan" ? fanWidth : gridColumns * gridCell + 32
+    readonly property real contentHeight_: mode === "fan" ? (entryCount + 1) * fanStep + 28
+                                                         : 48 + gridRows * gridCell + 52
+
+    // Stands in for a menu here; owner is what Dock.shouldOpenMenu() compares against.
+    readonly property Item owner: stack
+
+    // 0 → 1 as the fan opens.
+    property real opening: 0
+
+    popupType: QQC2.Popup.Window
+    padding: 0
+    closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+    width: contentWidth_
+    height: contentHeight_
+    background: Item {}
+
+    SystemPalette {
+        id: palette
+    }
+
+    // Everything lives inside the content item: children declared on a Menu itself
+    // would be treated as menu entries.
+    contentItem: Item {
+        implicitWidth: stackPopup.contentWidth_
+        implicitHeight: stackPopup.contentHeight_
+
+        // ── Fan ──────────────────────────────────────────────────────────────
+        Item {
+            anchors.fill: parent
+            visible: stackPopup.mode === "fan"
+
+            Repeater {
+                model: stackPopup.mode === "fan" ? stackPopup.entries.length + 1 : 0
+
+                delegate: Item {
+                    id: fanItem
+
+                    required property int index
+
+                    // The last slot, at the top, is "Open in Dolphin".
+                    readonly property bool isFolderLink: index === stackPopup.entryCount
+                    readonly property var entry: isFolderLink ? null : stackPopup.entries[index]
+
+                    // Each item starts a little after the one below it, overshooting
+                    // slightly as it lands.
+                    readonly property real progress: Math.max(0, Math.min(1, stackPopup.opening * 1.6 - index * 0.05))
+                    readonly property real eased: {
+                        const t = progress - 1;
+                        return 1 + 2.2 * t * t * t + 1.2 * t * t;
+                    }
+
+                    // Height above the stack, and where the arc puts the item.
+                    readonly property real rise: (index + 1) * stackPopup.fanStep
+                    readonly property real arcX: stackPopup.fanRadius - Math.sqrt(stackPopup.fanRadius * stackPopup.fanRadius - rise * rise)
+                    readonly property real tilt: Math.asin(rise / stackPopup.fanRadius) * 180 / Math.PI * 0.7
+
+                    readonly property bool hovered: hoverArea.containsMouse
+
+                    width: stackPopup.contentWidth_
+                    height: stackPopup.fanStep
+                    // From the stack (bottom centre) to its place on the arc.
+                    x: arcX * eased
+                    y: stackPopup.contentHeight_ - stackPopup.fanStep - 4 - (rise - stackPopup.fanStep) * eased
+                    opacity: Math.min(1, progress * 2)
+
+                    transform: Rotation {
+                        origin.x: fanItem.width / 2
+                        origin.y: fanItem.height / 2
+                        angle: fanItem.tilt * fanItem.eased
+                    }
+
+                    Image {
+                        id: fanImage
+
+                        visible: !fanItem.isFolderLink
+                        width: stackPopup.fanIcon
+                        height: stackPopup.fanIcon
+                        x: (parent.width - width) / 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        scale: fanItem.hovered ? 1.08 : 1
+                        source: fanItem.entry ? stackPopup.iconFor(fanItem.entry.url, fanItem.entry.isDir) : ""
+                        sourceSize.width: width
+                        sourceSize.height: height
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+
+                        Behavior on scale {
+                            NumberAnimation { duration: 90 }
+                        }
+                    }
+
+                    // Name pill to the left of the icon; the accent colour when hovered.
+                    Rectangle {
+                        id: pill
+
+                        readonly property string name: fanItem.isFolderLink ? qsTr("Open in Dolphin  ›") : fanItem.entry.name
+
+                        height: pillText.implicitHeight + 8
+                        width: Math.min(pillText.implicitWidth + 22, stackPopup.fanWidth / 2 - stackPopup.fanIcon / 2 - 24)
+                        radius: height / 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: fanItem.isFolderLink ? (parent.width - width) / 2 : fanImage.x - width - 10
+                        color: fanItem.hovered ? palette.highlight
+                                               : (stackPopup.dock.dark ? Qt.rgba(0.11, 0.11, 0.13, 0.88) : Qt.rgba(0.97, 0.97, 0.98, 0.94))
+                        border.width: 1
+                        border.color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+
+                        Text {
+                            id: pillText
+
+                            anchors.centerIn: parent
+                            width: Math.min(implicitWidth, parent.width - 22)
+                            text: pill.name
+                            elide: Text.ElideMiddle
+                            color: fanItem.hovered ? palette.highlightedText
+                                                   : (stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85))
+                            font.pixelSize: 13
+                            font.weight: fanItem.isFolderLink ? Font.DemiBold : Font.Medium
+                        }
+                    }
+
+                    MouseArea {
+                        id: hoverArea
+
+                        // The icon and its label together.
+                        x: pill.x
+                        width: fanItem.isFolderLink ? pill.width : fanImage.x + fanImage.width - pill.x
+                        height: parent.height
+                        hoverEnabled: true
+                        onClicked: stackPopup.openItem(fanItem.isFolderLink ? stackPopup.stack.folderUrl : fanItem.entry.url)
+                    }
+                }
+            }
+        }
+
+        // ── Grid ─────────────────────────────────────────────────────────────
+        Item {
+            anchors.fill: parent
+            visible: stackPopup.mode === "grid"
+
+            // The same glass as the dock, with the compositor blurring behind it.
+            DockBackground {
+                id: glass
+
+                anchors.fill: parent
+                glassOpacity: HarbourSettings.glassOpacity / 100
+                dark: stackPopup.dock.dark
+                radius: 18
+            }
+
+            Text {
+                x: 20
+                y: 14
+                text: stackPopup.stack.label
+                color: stackPopup.dock.dark ? "white" : "black"
+                font.pixelSize: 15
+                font.weight: Font.DemiBold
+            }
+
+            GridView {
+                x: 16
+                y: 44
+                width: parent.width - 32
+                height: parent.height - 44 - 48
+                clip: true
+                cellWidth: stackPopup.gridCell
+                cellHeight: stackPopup.gridCell
+                model: stackPopup.mode === "grid" ? stackPopup.entries : []
+                boundsBehavior: Flickable.StopAtBounds
+
+                delegate: Item {
+                    id: gridItem
+
+                    required property var modelData
+
+                    width: stackPopup.gridCell
+                    height: stackPopup.gridCell
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 3
+                        radius: 10
+                        color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07)
+                        visible: cellMouse.containsMouse
+                    }
+
+                    Image {
+                        width: 56
+                        height: 56
+                        x: (parent.width - width) / 2
+                        y: 8
+                        source: stackPopup.iconFor(gridItem.modelData.url, gridItem.modelData.isDir)
+                        sourceSize.width: 56
+                        sourceSize.height: 56
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                    }
+
+                    Text {
+                        x: 4
+                        y: 68
+                        width: parent.width - 8
+                        text: gridItem.modelData.name
+                        color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85)
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        id: cellMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: stackPopup.openItem(gridItem.modelData.url)
+                    }
+                }
+            }
+
+            QQC2.Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 10
+                text: qsTr("Open in Dolphin")
+                icon.name: "system-file-manager"
+                onClicked: stackPopup.openItem(stackPopup.stack.folderUrl)
+            }
+        }
+    }
+
+    NumberAnimation {
+        id: openAnimation
+
+        target: stackPopup
+        property: "opening"
+        from: 0
+        to: 1
+        duration: 420
+    }
+
+    function iconFor(url: url, isDir: bool): url {
+        const name = String(url).toLowerCase();
+        if (!isDir && /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/.test(name)) {
+            return url; // images show themselves
+        }
+        return DockTools.iconUrl(DockTools.iconNameForUrl(url));
+    }
+
+    function openItem(url: url) {
+        DockTools.openUrl(url);
+        close();
+    }
+
+    function showAbove() {
+        if (mode === "list") {
+            // The list view is just a menu. It gets everything it needs up front: inside
+            // a Menu, "popup" names the menu's own popup() method, not this object.
+            const menu = listMenuComponent.createObject(dock, {
+                dock: dock,
+                folderUrl: stack.folderUrl,
+            });
+            menu.aboutToHide.connect(() => stackPopup.destroy(1000));
+            menu.showAbove(stack);
+            return;
+        }
+        // Same anchoring trick as DockMenu.
+        const p = stack.mapToItem(dock.menuAnchor.parent, (stack.width - contentWidth_) / 2, -4);
+        dock.menuAnchor.x = p.x;
+        dock.menuAnchor.y = p.y;
+        dock.menuAnchor.width = contentWidth_;
+        stackPopup.popup(dock.menuAnchor);
+    }
+
+    onAboutToShow: {
+        dock.currentMenu = stackPopup;
+        dock.menuOpen = true;
+        dock.autoHide.hold();
+    }
+    onOpened: {
+        if (mode === "grid") {
+            DockTools.blurBehind(glass, glass.radius);
+        } else {
+            openAnimation.start();
+        }
+    }
+    onAboutToHide: {
+        if (dock.currentMenu === stackPopup) {
+            dock.currentMenu = null;
+            dock.menuOpen = false;
+        }
+        dock.autoHide.release();
+    }
+    onClosed: {
+        dock.noteMenuClosed(stack);
+        destroy(1000); // see DockMenu
+    }
+
+    Component {
+        id: listMenuComponent
+
+        DockMenu {
+            id: listMenu
+
+            required property url folderUrl
+
+            // Like a normal KDE context menu: the newest dozen, folders as submenus.
+            function build() {
+                StackMenus.fill(listMenu, folderUrl, 12);
+            }
+        }
+    }
+}

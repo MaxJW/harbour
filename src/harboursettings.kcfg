@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Shared by the dock and its System Settings module. Stored in ~/.config/harbourrc. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name="harbourrc"/>
+
+  <group name="Items">
+    <entry name="launchers" key="Launchers" type="StringList">
+      <label>Apps kept in the dock, in order</label>
+      <default>applications:org.kde.dolphin.desktop,applications:com.mitchellh.ghostty.desktop,applications:helium.desktop,applications:equibop.desktop,applications:steam.desktop,applications:spotify-launcher.desktop,applications:obsidian.desktop,applications:dev.zed.Zed.desktop,applications:systemsettings.desktop</default>
+    </entry>
+    <entry name="stacks" key="Stacks" type="StringList">
+      <label>Folders shown as stacks after the separator</label>
+      <default>~/Downloads</default>
+    </entry>
+    <entry name="stackViews" key="StackViews" type="StringList">
+      <label>How each stack opens, in the same order: fan, grid or list ("auto" means fan)</label>
+      <default>fan</default>
+    </entry>
+    <entry name="showTrash" key="ShowTrash" type="Bool">
+      <label>Show the Trash at the end of the dock</label>
+      <default>true</default>
+    </entry>
+  </group>
+
+  <group name="Appearance">
+    <entry name="iconSize" key="IconSize" type="Int">
+      <label>Icon size in logical pixels</label>
+      <default>56</default>
+      <min>24</min>
+      <max>128</max>
+    </entry>
+    <entry name="magnification" key="Magnification" type="Bool">
+      <label>Magnify icons under the pointer</label>
+      <default>true</default>
+    </entry>
+    <entry name="magnifiedIconSize" key="MagnifiedIconSize" type="Int">
+      <label>Largest magnified icon size in logical pixels</label>
+      <default>96</default>
+      <min>24</min>
+      <max>256</max>
+    </entry>
+    <entry name="glassOpacity" key="GlassOpacity" type="Int">
+      <label>Glass opacity, 0 clear to 100 opaque</label>
+      <default>50</default>
+      <min>0</min>
+      <max>100</max>
+    </entry>
+    <entry name="showIndicators" key="ShowIndicators" type="Bool">
+      <label>Show indicators for open apps</label>
+      <default>true</default>
+    </entry>
+  </group>
+
+  <group name="Behaviour">
+    <entry name="autoHide" key="AutoHide" type="Bool">
+      <label>Automatically hide and show the dock</label>
+      <default>true</default>
+    </entry>
+    <entry name="showWhenClear" key="ShowWhenClear" type="Bool">
+      <label>With auto-hide on, keep the dock shown while no window overlaps it</label>
+      <default>true</default>
+    </entry>
+    <entry name="revealDelay" key="RevealDelay" type="Int">
+      <label>Extra delay before revealing, in milliseconds, on top of KWin's screen edge delay</label>
+      <default>0</default>
+      <min>0</min>
+      <max>2000</max>
+    </entry>
+    <entry name="hideDelay" key="HideDelay" type="Int">
+      <label>Delay before hiding once the pointer leaves, in milliseconds</label>
+      <default>350</default>
+      <min>0</min>
+      <max>5000</max>
+    </entry>
+    <entry name="revealDuration" key="RevealDuration" type="Int">
+      <label>Reveal animation duration in milliseconds</label>
+      <default>300</default>
+      <min>0</min>
+      <max>2000</max>
+    </entry>
+    <entry name="hideDuration" key="HideDuration" type="Int">
+      <label>Hide animation duration in milliseconds</label>
+      <default>250</default>
+      <min>0</min>
+      <max>2000</max>
+    </entry>
+    <entry name="animateOpening" key="AnimateOpening" type="Bool">
+      <label>Bounce icons while apps open</label>
+      <default>true</default>
+    </entry>
+    <entry name="screenMode" key="ScreenMode" type="String">
+      <label>"follow": the dock comes up on whichever screen's edge you push; "primary": main screen only</label>
+      <default>follow</default>
+    </entry>
+    <entry name="clickToMinimize" key="ClickToMinimize" type="Bool">
+      <label>Clicking the active app's icon minimises its windows</label>
+      <default>false</default>
+    </entry>
+  </group>
+</kcfg>

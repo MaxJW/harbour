@@ -1,0 +1,15 @@
+[Unit]
+Description=Harbour dock
+Documentation=file:///usr/share/applications/dev.harbour.dock.desktop
+PartOf=graphical-session.target
+After=plasma-kwin_wayland.service plasma-plasmashell.service
+
+[Service]
+ExecStart=/usr/bin/harbour
+# Come back if something ever knocks the dock over; a clean quit stays quit.
+Restart=on-failure
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=plasma-workspace.target

@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Category": "Appearance",
+        "Description": "macOS-style Genie, Scale or Suck animation into the window's dock icon",
+        "EnabledByDefault": false,
+        "License": "GPL",
+        "Name": "Genie (Harbour)"
+    },
+    "org.kde.kwin.effect": {
+        "exclusiveGroup": "minimize"
+    }
+}

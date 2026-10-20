@@ -1,0 +1,10 @@
+{
+    "KPlugin": {
+        "Description": "Size, magnification, hiding, minimise animation and more for the Harbour dock",
+        "Icon": "preferences-desktop-display",
+        "Name": "Dock"
+    },
+    "X-KDE-Keywords": "Dock,Harbour,Magnification,Auto-hide,Genie,Minimize,Trash,Stacks,Launcher",
+    "X-KDE-System-Settings-Parent-Category": "workspace",
+    "X-KDE-Weight": 70
+}

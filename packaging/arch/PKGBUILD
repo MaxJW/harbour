@@ -1,0 +1,27 @@
+# Local PKGBUILD: builds the working tree this file lives in.
+#   cd packaging/arch && makepkg -si
+
+pkgname=harbour
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='A dock for KDE Plasma'
+arch=('x86_64')
+license=('GPL-3.0-or-later')
+# The KWin effect is built against the exact KWin version: rebuild this package after KWin updates.
+depends=('qt6-base' 'qt6-declarative' 'layer-shell-qt' 'kwin' 'plasma-workspace' 'kconfig' 'kcoreaddons'
+         'kglobalaccel' 'kio' 'kservice' 'kcmutils' 'kirigami' 'qqc2-desktop-style')
+makedepends=('cmake' 'extra-cmake-modules' 'ninja' 'plasma-wayland-protocols' 'vulkan-headers')
+source=()
+
+_srcroot="$(realpath "$startdir/../..")"
+
+build() {
+  cmake -S "$_srcroot" -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

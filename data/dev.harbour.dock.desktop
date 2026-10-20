@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Harbour
+GenericName=Dock
+Comment=A dock for KDE Plasma
+Exec=harbour
+Icon=preferences-desktop-display
+NoDisplay=true
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,org_kde_plasma_activation_feedback
