@@ -15,6 +15,7 @@ mark "empty desktop"
 snap clear-empty
 
 dolphin --new-window > /dev/null 2>&1 &
+DOLPHIN=$!
 sleep 2.5
 printf 'for (const w of workspace.windowList()) if (w.normalWindow) w.setMaximize(true, true);\n' > "$CI/max.js"
 kwin_script "$CI/max.js" max
@@ -27,6 +28,6 @@ kwin_script "$CI/min.js" min
 mark "window minimised"
 sleep 1.5
 snap clear-again
-kill %1 2> /dev/null
+kill $DOLPHIN 2> /dev/null
 
 sort -n "$CI/harbour.log" "$CI/marks.log" | grep -E '===|-> ' | sed 's/AutoHideController:://g'

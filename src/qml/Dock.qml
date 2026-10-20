@@ -206,6 +206,37 @@ Item {
         return null;
     }
 
+    // The stack paths for a drop, if everything dropped is a local folder.
+    function stackPaths(urls: list<url>): list<string> {
+        const paths = [];
+        for (const url of urls) {
+            const path = DockTools.stackPath(url);
+            if (path === "") {
+                return [];
+            }
+            paths.push(path);
+        }
+        return paths;
+    }
+
+    // Adds folders as stacks at the end, skipping ones already there.
+    function pinFolders(paths: list<string>) {
+        const stacks = HarbourSettings.stacks.slice();
+        const views = HarbourSettings.stackViews.slice();
+        while (views.length < stacks.length) {
+            views.push("fan");
+        }
+        for (const path of paths) {
+            if (!stacks.includes(path)) {
+                stacks.push(path);
+                views.push("fan");
+            }
+        }
+        HarbourSettings.stacks = stacks;
+        HarbourSettings.stackViews = views;
+        HarbourSettings.save();
+    }
+
     // Identifies an app across Plasma's launcher → starting → running task swaps.
     function appKey(model: var): string {
         const url = model.LauncherUrlWithoutIcon ? model.LauncherUrlWithoutIcon.toString() : "";
@@ -638,7 +669,12 @@ Item {
             onExited: target = null
             onDropped: drop => {
                 const urls = drop.urls;
-                if (target && target.acceptDrop) {
+                // Folders dropped between items or on the separator are kept as stacks,
+                // as on macOS; dropped on an item, they go to that item as usual.
+                const folders = target ? [] : root.stackPaths(urls);
+                if (folders.length > 0) {
+                    root.pinFolders(folders);
+                } else if (target && target.acceptDrop) {
                     target.acceptDrop(urls); // Trash, stacks
                 } else if (urls.length === 1 && DockTools.isApplication(urls[0])) {
                     tasksModel.requestAddLauncher(urls[0]);

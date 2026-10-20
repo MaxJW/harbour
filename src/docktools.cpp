@@ -10,6 +10,7 @@
 
 #include <QDBusConnection>
 #include <QDir>
+#include <QFileInfo>
 #include <QCursor>
 #include <QGuiApplication>
 #include <QDBusMessage>
@@ -176,6 +177,22 @@ QUrl DockTools::folderUrl(const QString &path) const
         expanded.replace(0, 1, QDir::homePath());
     }
     return QUrl::fromLocalFile(expanded);
+}
+
+QString DockTools::stackPath(const QUrl &url) const
+{
+    if (!url.isLocalFile() || !QFileInfo(url.toLocalFile()).isDir()) {
+        return {};
+    }
+    const QString path = QDir::cleanPath(url.toLocalFile());
+    const QString home = QDir::homePath();
+    if (path == home) {
+        return QStringLiteral("~");
+    }
+    if (path.startsWith(home + u'/')) {
+        return u'~' + path.mid(home.size());
+    }
+    return path;
 }
 
 QVariantList DockTools::folderEntries(const QUrl &folder, int limit) const

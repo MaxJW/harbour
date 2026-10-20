@@ -27,6 +27,11 @@ public:
     /// Shows a not-yet-applied value on the running dock (which comes up to show it).
     Q_INVOKABLE void preview(const QString &name, const QVariant &value);
 
+    /// A stack's path ("~/…" inside the home directory) for a folder picked in a dialog.
+    Q_INVOKABLE QString stackPath(const QUrl &folder) const;
+    /// The theme icon for a stack's folder (Downloads, Documents, … get their own).
+    Q_INVOKABLE QString stackIcon(const QString &path) const;
+
     HarbourSettings *settings() const { return m_settings; }
     bool genieInstalled() const { return m_genieInstalled; }
     QString minimizeEffect() const { return m_minimizeEffect; }

@@ -5,8 +5,9 @@
 #   tests/ui/harness.sh <test-script> [outputs]
 #
 # Needs a build with -DHARBOUR_BUILD_UI_TESTS=ON (for edgeprobe), plus spectacle and
-# ImageMagick. HARBOUR_BUILD_DIR picks the build tree (default: build/). Screenshots
-# and logs go to <build>/ui-tests/.
+# ImageMagick. HARBOUR_BUILD_DIR picks the build tree (default: build/), and
+# HARBOUR_EXTRA_LOG_RULES adds Qt logging rules for Harbour. Screenshots and logs go to
+# <build>/ui-tests/.
 #
 # The test script is sourced inside the session with these available:
 #   $CI (work dir), $W/$H (output size), probe <edgeprobe args>, snap <name> [crop],
@@ -47,7 +48,7 @@ export WAYLAND_DISPLAY=$SOCKET
 export QT_QPA_PLATFORM=wayland
 
 QT_FORCE_STDERR_LOGGING=1 QT_MESSAGE_PATTERN='%{time boot} %{category}: %{message}' \
-    QT_LOGGING_RULES='qt.qpa.services.warning=false;harbour.geometry.info=true' \
+    QT_LOGGING_RULES="qt.qpa.services.warning=false;harbour.geometry.info=true;${HARBOUR_EXTRA_LOG_RULES}" \
     "$HARBOUR_BIN" > "$CI/harbour.log" 2>&1 &
 HARBOUR=$!
 sleep 3

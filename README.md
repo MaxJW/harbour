@@ -20,7 +20,7 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 - **Magnification** that follows the pointer smoothly. Icons at rest are drawn pixel-exact, so they stay sharp.
 - **Bounces** when an app launches and when an app asks for attention.
 - **Genie minimise.** An optional KWin effect (Genie, Scale or Suck) that pours windows into their own dock icon.
-- **Stacks.** A folder (Downloads by default) after the separator opens as a macOS-style **fan**, a glass **grid** or a native **list**, newest first. Drop files on a stack to move them into its folder.
+- **Stacks.** Folders after the separator (Downloads by default) open as a macOS-style **fan**, a glass **grid** or a native **list**, newest first. To pin another folder, drop it between the dock's icons or add it in settings. Drop files on a stack to move them into its folder.
 - **Trash** at the end of the dock, with Open and Empty Trash. Drop files on it to bin them.
 - **Badges and progress bars** from apps that use the Unity `LauncherEntry` API, such as chat apps, Steam downloads and file copies.
 - **Native KDE menus** for apps, stacks and the Trash, listing windows, jump-list actions, pin/unpin, Show All Windows, Minimise and Quit.
@@ -83,6 +83,7 @@ Pass `-DHARBOUR_BUILD_KWIN_EFFECT=OFF` to skip the Genie effect.
 - Remove or hide any Plasma panel that holds a task manager, so you don't have two docks.
 - To turn on Genie, pick it under **System Settings → Workspace → Dock → Minimise animation**. It replaces Magic Lamp.
 - To pin an app, right-click it while it's running and choose **Pin to Dock**.
+- To pin a folder, drag it from Dolphin and drop it between the dock's icons.
 
 ## Configuration
 
@@ -90,9 +91,9 @@ Everything lives in **System Settings → Workspace → Dock**, and it's all sto
 
 | | |
 |---|---|
-| **Appearance** | Icon size, magnification and its size, glass opacity, running indicators |
-| **Behaviour** | Auto-hide, staying shown when no window is in the way, bouncing on launch, click-to-minimise, which screen to use |
-| **Items** | Trash, and each stack's view: fan, grid or list (also available from the stack's right-click menu) |
+| **Appearance** | Icon size, magnification and its size, glass opacity |
+| **Behaviour** | Auto-hide, staying shown when no window is in the way, bouncing on launch, indicators, the Trash, click-to-minimise, which screen to use |
+| **Folders** | Add, reorder and remove the folders kept as stacks, and pick each one's view: fan, grid or list |
 | **Minimise** | Genie, Scale, Suck or KDE's own effects |
 | **Timing** | Reveal/hide delays and slide durations |
 
@@ -115,11 +116,12 @@ systemctl --user stop harbour.service   # if the installed one is running
 ./build/bin/harbour
 ```
 
-The UI tests need `kwin_wayland`, `spectacle` and ImageMagick. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
+The UI tests need `kwin_wayland`, `spectacle`, ImageMagick and PyGObject with GTK 3. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
 
 ```sh
 tests/ui/harness.sh tests/ui/t-switch.sh   # one-click menu switching
 tests/ui/harness.sh tests/ui/t-stress.sh   # menus and stacks opened, switched and closed quickly, over and over
+tests/ui/harness.sh tests/ui/t-folders.sh  # pin a folder by dropping it, then reorder and remove it in settings
 ```
 
 Screenshots and logs land in `build/ui-tests/`. `ROADMAP.md` records the design decisions and what's been verified.

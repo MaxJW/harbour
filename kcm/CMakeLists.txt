@@ -20,4 +20,5 @@ target_link_libraries(kcm_harbour PRIVATE
     KF6::ConfigGui
     KF6::CoreAddons
     KF6::KCMUtilsQuick
+    KF6::KIOCore
 )

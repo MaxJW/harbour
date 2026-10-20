@@ -36,18 +36,27 @@ int main(int argc, char **argv) {
                 QTimer::singleShot(120, Qt::PreciseTimer, [&fi, btn] { fi.button(btn, 0); });
             }
         } else if (cmd == u"drag") {
-            // drag X1 Y1 X2 Y2: press, move in 20 steps over ~400 ms, release
+            // drag X1 Y1 X2 Y2 [MS]: press, nudge past the drag threshold, wait for a
+            // drag-and-drop to start, move over MS ms (default 600), linger, release
             const double x1 = atof(argv[2]), y1 = atof(argv[3]), x2 = atof(argv[4]), y2 = atof(argv[5]);
+            const int ms = argc > 6 ? atoi(argv[6]) : 600;
+            const int steps = qMax(1, ms / 16);
             fi.pointer_motion_absolute(wl_fixed_from_double(x1), wl_fixed_from_double(y1));
             QTimer::singleShot(60, Qt::PreciseTimer, [&fi] { fi.button(0x110, 1); });
-            for (int i = 1; i <= 20; ++i) {
-                QTimer::singleShot(100 + i * 20, Qt::PreciseTimer, [&fi, i, x1, y1, x2, y2] {
-                    fi.pointer_motion_absolute(wl_fixed_from_double(x1 + (x2 - x1) * i / 20), wl_fixed_from_double(y1 + (y2 - y1) * i / 20));
+            for (int i = 1; i <= 6; ++i) {
+                QTimer::singleShot(100 + i * 16, Qt::PreciseTimer, [&fi, i, x1, y1] {
+                    fi.pointer_motion_absolute(wl_fixed_from_double(x1 + i * 4), wl_fixed_from_double(y1));
                 });
             }
-            QTimer::singleShot(700, Qt::PreciseTimer, [&fi] { fi.button(0x110, 0); });
+            for (int i = 1; i <= steps; ++i) {
+                QTimer::singleShot(500 + i * ms / steps, Qt::PreciseTimer, [&fi, i, steps, x1, y1, x2, y2] {
+                    const double t = double(i) / steps;
+                    fi.pointer_motion_absolute(wl_fixed_from_double(x1 + 24 + (x2 - x1 - 24) * t), wl_fixed_from_double(y1 + (y2 - y1) * t));
+                });
+            }
+            QTimer::singleShot(500 + ms + 400, Qt::PreciseTimer, [&fi] { fi.button(0x110, 0); });
             mark(argv[1]);
-            QTimer::singleShot(900, &app, &QGuiApplication::quit);
+            QTimer::singleShot(500 + ms + 700, &app, &QGuiApplication::quit);
             return app.exec();
         } else if (cmd == u"sweep") {
             // sweep X1 X2 Y MS: move smoothly at ~1 kHz, there and back

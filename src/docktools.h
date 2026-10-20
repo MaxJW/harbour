@@ -66,4 +66,7 @@ public:
     Q_INVOKABLE void moveToFolder(const QList<QUrl> &urls, const QUrl &folder) const;
     /// Expands a leading "~" to the home directory and returns a file URL.
     Q_INVOKABLE QUrl folderUrl(const QString &path) const;
+    /// The reverse, for pinning a stack: a local folder's path, as "~/…" inside the home
+    /// directory, or "" if the URL isn't a local folder.
+    Q_INVOKABLE QString stackPath(const QUrl &url) const;
 };

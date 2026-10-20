@@ -196,7 +196,16 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - [x] UI test harness in the repo (`tests/ui/`), edgeprobe behind `HARBOUR_BUILD_UI_TESTS`.
 - [x] pacman hook (`packaging/arch/harbour.hook`): warns to rebuild after kwin / qt6 / layer-shell-qt /
       plasma-workspace upgrades.
-- [ ] Pinned folders: add/remove/reorder stacks from the KCM and from the dock (user request).
+- [x] Pinned folders (user request): a folder dropped between the dock's items (or on the divider) becomes a stack
+      (`Dock.pinFolders`, `DockTools.stackPath` stores "~/…"); the KCM has a Folders section (add via FolderDialog,
+      per-folder view, move left/right, remove). Verified in the harness (`t-folders.sh`): drop pins it, the page
+      lists it, move + Apply reorders harbourrc, remove + Apply takes it off the dock live. Drops in the harness use a
+      GTK source (`dragsource.py`): a Qt source sends file lists through the FileTransfer portal, which the private
+      bus doesn't have. ⚠ Not verified in the real session: a drop from Dolphin there goes through that portal; Qt
+      should resolve it back to the real paths for an unsandboxed receiver, but this needs checking.
+- [x] Divider stress test (`t-divider.sh`, after the user saw crashes "messing with the divider"): 15 rounds of
+      clicks/right-clicks/menus plus drags on and across it, no crash. The user's two crashes (21:51, 21:52) were
+      with the 21:47 package and match the deleted-menu crash fixed after it.
 - [ ] Animation pass: quit shrink-out, drop settle, name-label slide, smooth size changes, attention peek while
       hidden, fan/grid close animation (only for closes the dock starts; compositor-dismissed popups can't animate).
 

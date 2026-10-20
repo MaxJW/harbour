@@ -1,6 +1,7 @@
 #include "harbourkcm.h"
 
 #include <KConfigGroup>
+#include <KIO/Global>
 #include <KPluginFactory>
 #include <KPluginMetaData>
 #include <KSharedConfig>
@@ -9,6 +10,7 @@
 #include <QDBusMessage>
 #include <QDBusPendingCall>
 #include <QDBusVariant>
+#include <QDir>
 
 using namespace Qt::StringLiterals;
 
@@ -127,6 +129,25 @@ bool HarbourKcm::isSaveNeeded() const
 bool HarbourKcm::isDefaults() const
 {
     return m_minimizeEffect == (m_genieInstalled ? u"Genie"_s : u"Default"_s);
+}
+
+QString HarbourKcm::stackPath(const QUrl &folder) const
+{
+    const QString path = QDir::cleanPath(folder.toLocalFile());
+    const QString home = QDir::homePath();
+    if (path == home) {
+        return u"~"_s;
+    }
+    return path.startsWith(home + u'/') ? u'~' + path.mid(home.size()) : path;
+}
+
+QString HarbourKcm::stackIcon(const QString &path) const
+{
+    QString expanded = path;
+    if (expanded == u"~" || expanded.startsWith(u"~/")) {
+        expanded.replace(0, 1, QDir::homePath());
+    }
+    return KIO::iconNameForUrl(QUrl::fromLocalFile(expanded));
 }
 
 #include "harbourkcm.moc"

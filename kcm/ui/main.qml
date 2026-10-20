@@ -1,5 +1,7 @@
 import QtQuick
+import QtCore
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
@@ -230,6 +232,152 @@ KCM.SimpleKCM {
 
         Item {
             Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18nc("@title:group", "Folders")
+        }
+
+        // Folders kept after the separator as stacks, in dock order. Each one's view
+        // sits beside it in stackViews.
+        ColumnLayout {
+            id: folders
+
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+            spacing: Kirigami.Units.smallSpacing
+
+            readonly property var stacks: root.settings.stacks
+            readonly property var views: {
+                const views = root.settings.stackViews.slice(0, stacks.length);
+                while (views.length < stacks.length) {
+                    views.push("fan");
+                }
+                return views;
+            }
+
+            function update(stacks, views) {
+                root.settings.stacks = stacks;
+                root.settings.stackViews = views;
+            }
+
+            function add(path: string) {
+                if (path !== "" && !stacks.includes(path)) {
+                    update(stacks.concat([path]), views.concat(["fan"]));
+                }
+            }
+
+            function remove(index: int) {
+                const stacks = folders.stacks.slice();
+                const views = folders.views.slice();
+                stacks.splice(index, 1);
+                views.splice(index, 1);
+                update(stacks, views);
+            }
+
+            function move(from: int, to: int) {
+                const stacks = folders.stacks.slice();
+                const views = folders.views.slice();
+                stacks.splice(to, 0, stacks.splice(from, 1)[0]);
+                views.splice(to, 0, views.splice(from, 1)[0]);
+                update(stacks, views);
+            }
+
+            function setView(index: int, view: string) {
+                const views = folders.views.slice();
+                views[index] = view;
+                update(stacks.slice(), views);
+            }
+
+            Repeater {
+                model: folders.stacks
+
+                delegate: RowLayout {
+                    id: folderRow
+
+                    required property string modelData
+                    required property int index
+
+                    Layout.fillWidth: true
+                    spacing: Kirigami.Units.smallSpacing
+
+                    Kirigami.Icon {
+                        source: kcm.stackIcon(folderRow.modelData)
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: Kirigami.Units.iconSizes.smallMedium
+                    }
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        text: folderRow.modelData
+                        elide: Text.ElideMiddle
+                    }
+                    QQC2.ComboBox {
+                        textRole: "text"
+                        valueRole: "value"
+                        model: [
+                            { text: i18nc("@item:inlistbox stack view", "Fan"), value: "fan" },
+                            { text: i18nc("@item:inlistbox stack view", "Grid"), value: "grid" },
+                            { text: i18nc("@item:inlistbox stack view", "List"), value: "list" },
+                        ]
+                        currentIndex: Math.max(0, model.findIndex(entry => entry.value === folders.views[folderRow.index]))
+                        onActivated: folders.setView(folderRow.index, currentValue)
+                    }
+                    QQC2.ToolButton {
+                        icon.name: "go-up"
+                        text: i18nc("@action:button", "Move left in the Dock")
+                        display: QQC2.AbstractButton.IconOnly
+                        enabled: folderRow.index > 0
+                        onClicked: folders.move(folderRow.index, folderRow.index - 1)
+                        QQC2.ToolTip.text: text
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    }
+                    QQC2.ToolButton {
+                        icon.name: "go-down"
+                        text: i18nc("@action:button", "Move right in the Dock")
+                        display: QQC2.AbstractButton.IconOnly
+                        enabled: folderRow.index < folders.stacks.length - 1
+                        onClicked: folders.move(folderRow.index, folderRow.index + 1)
+                        QQC2.ToolTip.text: text
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    }
+                    QQC2.ToolButton {
+                        icon.name: "list-remove"
+                        text: i18nc("@action:button", "Remove from the Dock")
+                        display: QQC2.AbstractButton.IconOnly
+                        onClicked: folders.remove(folderRow.index)
+                        QQC2.ToolTip.text: text
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    }
+                }
+            }
+
+            QQC2.Label {
+                visible: folders.stacks.length === 0
+                text: i18nc("@info", "No folders in the Dock.")
+                opacity: 0.7
+            }
+
+            QQC2.Button {
+                text: i18nc("@action:button", "Add Folder…")
+                icon.name: "list-add"
+                onClicked: folderDialog.open()
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                text: i18nc("@info", "You can also drop a folder between the Dock's icons, or remove one from its right-click menu.")
+                wrapMode: Text.Wrap
+                font: Kirigami.Theme.smallFont
+                opacity: 0.7
+            }
+
+            KCM.SettingStateBinding {
+                configObject: root.settings
+                settingName: "stacks"
+            }
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
             Kirigami.FormData.label: i18nc("@title:group", "Timing")
         }
 
@@ -296,5 +444,13 @@ KCM.SimpleKCM {
                 settingName: "hideDuration"
             }
         }
+    }
+
+    FolderDialog {
+        id: folderDialog
+
+        title: i18nc("@title:window", "Add a Folder to the Dock")
+        currentFolder: StandardPaths.writableLocation(StandardPaths.HomeLocation)
+        onAccepted: folders.add(kcm.stackPath(selectedFolder))
     }
 }
