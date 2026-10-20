@@ -24,4 +24,6 @@ build() {
 
 package() {
   DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$_srcroot/packaging/arch/harbour.hook" "$pkgdir/usr/share/libalpm/hooks/harbour.hook"
+  install -Dm644 "$_srcroot/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

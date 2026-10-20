@@ -1,7 +1,7 @@
 # macOS-style Dock for KDE Plasma — Roadmap
 
-Status: **Phases 0–7 built (2026-10-20); waiting on the user** to install, try it, and make the calls under
-"Notes for the user". Nothing is committed yet. Next: user feedback, timing calibration, polish.
+Status: **Phases 0–7 built and feedback rounds 1–5 done (2026-10-20).** Public at
+https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the animation pass (see the end).
 
 ## Target system (verified 2026-10-20)
 
@@ -169,9 +169,9 @@ Status: **Phases 0–7 built (2026-10-20); waiting on the user** to install, try
 - Stacks: the macOS fan is back and is the default (user meant "can we not…" as a request): 12 newest, arc of
   radius 2600 px curving right with tilt, staggered spring-in, accent-coloured hover, "Open in Dolphin" on top.
   Grid and List remain. User's Downloads set to fan.
-- **Testing without the user:** `scratchpad/ci/harness.sh <test>` runs Harbour in an invisible KWin
+- **Testing without the user:** `tests/ui/harness.sh tests/ui/<test>` (build with `-DHARBOUR_BUILD_UI_TESTS=ON`) runs Harbour in an invisible KWin
   (`--virtual`, own private D-Bus with no service activation, own XDG_CONFIG_HOME) and drives it with fake input;
-  tests `t-switch.sh`, `t-stress.sh`, `t-clear.sh`, `t-glass.sh`. Earlier nested runs had leaked
+  tests `t-switch.sh`, `t-stress.sh`, `t-clear.sh`, `t-glass.sh`, `t-list.sh`; output in `build/ui-tests/`. Earlier nested runs had leaked
   xdg-desktop-portal-kde processes (activated via the user's systemd); those were killed and the private bus
   config prevents it.
 
@@ -188,6 +188,17 @@ Status: **Phases 0–7 built (2026-10-20); waiting on the user** to install, try
   cursor (mapped through the dock, since Qt's "global" coordinates are window-local here) and opens the item
   under it once the button is up. Verified in the invisible test session: switch in one click, same item closes,
   ~200-cycle stress test, Trash/stack/list menus.
+
+## Next (agreed 2026-10-20)
+
+- [x] Git repo, public on GitHub, README with screenshots (taken in the UI harness over Plasma's "Next" wallpaper,
+      with a made-up Downloads folder), GPL-3.0 LICENSE.
+- [x] UI test harness in the repo (`tests/ui/`), edgeprobe behind `HARBOUR_BUILD_UI_TESTS`.
+- [x] pacman hook (`packaging/arch/harbour.hook`): warns to rebuild after kwin / qt6 / layer-shell-qt /
+      plasma-workspace upgrades.
+- [ ] Pinned folders: add/remove/reorder stacks from the KCM and from the dock (user request).
+- [ ] Animation pass: quit shrink-out, drop settle, name-label slide, smooth size changes, attention peek while
+      hidden, fan/grid close animation (only for closes the dock starts; compositor-dismissed popups can't animate).
 
 ## Notes for the user
 

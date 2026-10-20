@@ -31,6 +31,12 @@ if(HARBOUR_BUILD_KWIN_EFFECT)
     add_subdirectory(kwin-effect)
 endif()
 
+# The fake-input pointer driver used by tests/ui/harness.sh; never installed.
+option(HARBOUR_BUILD_UI_TESTS "Build the UI test probe (tests/ui)" OFF)
+if(HARBOUR_BUILD_UI_TESTS)
+    add_subdirectory(tests/ui/edgeprobe)
+endif()
+
 install(FILES data/dev.harbour.dock.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 # Started with the Plasma session once enabled: systemctl --user enable harbour.service
 if(NOT KDE_INSTALL_SYSTEMDUSERUNITDIR)

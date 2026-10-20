@@ -1,0 +1,15 @@
+# Harbour's KWin effect links KWin's internal library, which has no stable ABI, and the dock
+# uses private Qt API, so both need rebuilding when these update.
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = kwin
+Target = qt6-base
+Target = qt6-declarative
+Target = layer-shell-qt
+Target = plasma-workspace
+
+[Action]
+Description = Checking whether Harbour needs a rebuild...
+When = PostTransaction
+Exec = /usr/bin/sh -c "echo '==> Harbour was built against the old KWin/Qt. Rebuild it (cd packaging/arch && makepkg -si), then log out and back in.'"
