@@ -283,6 +283,11 @@ Item {
         if (key === "" || (kind === "launch" && !HarbourSettings.animateOpening)) {
             return;
         }
+        // Only the dock in use bounces: the one clicked, or the last one used when the
+        // app was started from elsewhere. Every dock sees the launch in the shared model.
+        if (!dockWindow.active) {
+            return;
+        }
         const existing = bounces[key];
         if (existing) {
             existing.stopAt = null;

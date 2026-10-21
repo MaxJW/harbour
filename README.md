@@ -26,7 +26,7 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 - **Badges and progress bars** from apps that use the Unity `LauncherEntry` API, such as chat apps, Steam downloads and file copies.
 - **Native KDE menus** for apps, stacks and the Trash, listing windows, jump-list actions, pin/unpin, Show All Windows, Minimise and Quit.
 - **Drag to rearrange**, or drag an icon off the dock to remove it.
-- **Multi-monitor.** One dock that follows the mouse to whichever screen you push against, or stays on the primary screen. It's the same physical size on every screen, scaled by each screen's pixel density.
+- **Multi-monitor.** A dock on every screen that comes up wherever you push the edge, only on the screen with the pointer, or only on the main screen. It's the same physical size on every screen, scaled by each screen's pixel density.
 - **A System Settings page** (Workspace → Dock) for size, magnification, glass, timings, the minimise effect and more. Changes apply live.
 - **Lightweight.** It draws nothing and uses no CPU while hidden.
 - <kbd>Meta</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> turns auto-hide on and off, like <kbd>⌥</kbd><kbd>⌘</kbd><kbd>D</kbd> on a Mac.

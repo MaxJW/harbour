@@ -22,6 +22,7 @@ AutoHideController::AutoHideController(ScreenEdge *edge, HarbourSettings *settin
 
     connect(m_settings, &HarbourSettings::autoHideChanged, this, &AutoHideController::applyAutoHideSetting);
     connect(m_settings, &HarbourSettings::showWhenClearChanged, this, &AutoHideController::applyAutoHideSetting);
+    connect(m_settings, &HarbourSettings::screenModeChanged, this, &AutoHideController::applyAutoHideSetting);
 
     // Becoming clear settles briefly first, so dragging a window across the dock
     // doesn't flash it up and down. Becoming covered acts at once (hide delay applies).
@@ -45,8 +46,9 @@ void AutoHideController::start()
 
 bool AutoHideController::autoHides() const
 {
-    // Nothing in the way: stay up (on every screen, like an empty desktop should look).
-    if (m_settings->showWhenClear() && m_clear) {
+    // Nothing in the way: stay up (on every screen, like an empty desktop should look,
+    // or with ScreenMode "cursor" only on the pointer's screen).
+    if (m_settings->showWhenClear() && m_clear && (m_active || m_settings->screenMode() != u"cursor")) {
         return false;
     }
     // With auto-hide off, only the active dock stays up; the others wait at their edges.
@@ -157,6 +159,9 @@ void AutoHideController::pointerEntered()
         break;
     case Revealing:
     case Shown:
+        // The dock the user is using becomes the active one (it bounces, peeks and
+        // gets minimise animations), even if it came up on its own.
+        Q_EMIT userRevealed();
         break;
     }
 }

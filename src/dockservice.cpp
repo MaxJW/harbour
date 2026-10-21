@@ -44,3 +44,8 @@ void DockService::reveal(const QString &screen)
 {
     m_docks->revealFor(1500ms, screen);
 }
+
+void DockService::cursorScreen(const QString &screen)
+{
+    m_docks->setCursorScreen(screen);
+}

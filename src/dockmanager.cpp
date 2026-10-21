@@ -5,10 +5,16 @@
 #include "logging.h"
 #include "outputorder.h"
 
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QFile>
 #include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QScreen>
+#include <QStandardPaths>
 
 #include <algorithm>
 #include <cmath>
@@ -72,7 +78,72 @@ void DockManager::revealFor(std::chrono::milliseconds duration, const QString &s
     m_revealTimer.start(duration);
 }
 
-DockManager::~DockManager() = default;
+namespace
+{
+const auto CursorScript = u"harbour-cursorscreen"_s;
+
+QDBusMessage kwinScripting(const QString &method, const QVariantList &arguments)
+{
+    QDBusMessage message = QDBusMessage::createMethodCall(u"org.kde.KWin"_s, u"/Scripting"_s, u"org.kde.kwin.Scripting"_s, method);
+    message.setArguments(arguments);
+    return message;
+}
+}
+
+DockManager::~DockManager()
+{
+    if (m_cursorTracking) {
+        QDBusConnection::sessionBus().call(kwinScripting(u"unloadScript"_s, {CursorScript}), QDBus::Block, 500);
+    }
+}
+
+void DockManager::updateCursorTracking()
+{
+    const bool want = m_settings->screenMode() == u"cursor";
+    if (want == m_cursorTracking) {
+        return;
+    }
+    m_cursorTracking = want;
+    // Unloading first also clears a copy left behind by a Harbour that crashed.
+    QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {CursorScript}));
+    if (!want) {
+        return;
+    }
+
+    // KWin loads scripts from files: copy ours out of the resources.
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u"/harbour-cursorscreen.js"_s;
+    QFile::remove(path);
+    if (!QFile::copy(u":/harbour/cursorscreen.js"_s, path)) {
+        qCWarning(lcAutoHide) << "couldn't write" << path;
+        return;
+    }
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, CursorScript})), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [](QDBusPendingCallWatcher *watcher) {
+        watcher->deleteLater();
+        const QDBusPendingReply<int> reply = *watcher;
+        if (reply.isError() || reply.value() < 0) {
+            qCWarning(lcAutoHide) << "KWin didn't load the pointer-screen script:" << reply.error().message();
+            return;
+        }
+        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(u"org.kde.KWin"_s,
+                                                                                u"/Scripting/Script"_s + QString::number(reply.value()),
+                                                                                u"org.kde.kwin.Script"_s,
+                                                                                u"run"_s));
+    });
+}
+
+void DockManager::setCursorScreen(const QString &screenName)
+{
+    if (m_settings->screenMode() != u"cursor") {
+        return;
+    }
+    for (const auto &[screen, dock] : m_docks) {
+        if (screen->name() == screenName) {
+            setActive(dock.get());
+            return;
+        }
+    }
+}
 
 void DockManager::start()
 {
@@ -113,6 +184,7 @@ void DockManager::syncScreens()
         setActive(primary != m_docks.end() ? primary->second.get() : m_docks.begin()->second.get());
     }
     updateSizeScales();
+    updateCursorTracking();
 }
 
 namespace

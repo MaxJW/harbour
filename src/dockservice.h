@@ -32,6 +32,8 @@ public Q_SLOTS:
     void endPreview();
     /// Shows the dock on the given screen (or the active one if empty) for a moment.
     void reveal(const QString &screen);
+    /// The pointer moved to this screen (from Harbour's KWin script).
+    void cursorScreen(const QString &screen);
 
 private:
     DockManager *m_docks;

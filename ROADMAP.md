@@ -256,6 +256,12 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       it grew the window, and on the user's NVIDIA setup a window resize shows stretched frames for a moment (the new
       size reaches KWin before a picture to match). Not reproducible in the harness. Settings size changes still
       resize the window once per change.
+- [x] ScreenMode "cursor" ("Only the screen with the pointer"): a KWin script (`src/cursorscreen.js`, copied to the
+      runtime dir and loaded over D-Bus while the mode is on) calls `dev.harbour.Dock.cursorScreen` when the pointer
+      changes screen; that dock becomes active and only the active dock stays up for ShowWhenClear. Bounces (launch
+      and attention) only on the active dock; a dock becomes active when the pointer enters it. Verified with two
+      virtual outputs (`t-screens.sh`, run with 2 outputs): dock follows the pointer left → right → left; a launch
+      clicked on one dock bounces only that dock.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

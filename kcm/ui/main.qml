@@ -174,8 +174,9 @@ KCM.SimpleKCM {
             textRole: "text"
             valueRole: "value"
             model: [
-                { text: i18nc("@item:inlistbox", "The screen you move the pointer to"), value: "follow" },
-                { text: i18nc("@item:inlistbox", "The main screen only"), value: "primary" },
+                { text: i18nc("@item:inlistbox", "Every screen"), value: "follow" },
+                { text: i18nc("@item:inlistbox", "Only the screen with the pointer"), value: "cursor" },
+                { text: i18nc("@item:inlistbox", "Only the main screen"), value: "primary" },
             ]
             currentIndex: Math.max(0, model.findIndex(entry => entry.value === root.settings.screenMode))
             onActivated: root.settings.screenMode = currentValue

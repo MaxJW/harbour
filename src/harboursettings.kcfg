@@ -96,7 +96,7 @@
       <default>true</default>
     </entry>
     <entry name="screenMode" key="ScreenMode" type="String">
-      <label>"follow": the dock comes up on whichever screen's edge you push; "primary": main screen only</label>
+      <label>"follow": a dock on every screen, coming up wherever you push the edge; "cursor": only the screen with the pointer has its dock up; "primary": main screen only</label>
       <default>follow</default>
     </entry>
     <entry name="clickToMinimize" key="ClickToMinimize" type="Bool">
