@@ -69,6 +69,7 @@ private:
     bool m_pointerScriptLoaded = false;
     bool m_pointerScriptFollows = false;
     int m_cursorQueries = 0;
+    QString m_cursorScript; // written once, on the first query
 
     // revealFor(): the dock being held up, and when to let go.
     QPointer<DockWindow> m_revealed;

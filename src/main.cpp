@@ -11,7 +11,6 @@
 #include <QApplication>
 #include <QQmlEngine>
 #include <QQuickWindow>
-#include <QScreen>
 #include <QTimer>
 
 #include <memory>

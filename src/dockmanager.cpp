@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 using namespace Qt::StringLiterals;
 using namespace std::chrono_literals;
@@ -93,6 +94,49 @@ QDBusMessage kwinScripting(const QString &method, const QVariantList &arguments)
     message.setArguments(arguments);
     return message;
 }
+
+// KWin loads scripts from files: writes one out to the runtime directory, returning its
+// path, or "" if it couldn't.
+QString writeScript(const QString &fileName, const QByteArray &script)
+{
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u'/' + fileName;
+    // Earlier versions copied the read-only resource file, and QSaveFile won't replace
+    // a file it can't write.
+    QFile::remove(path);
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(script) != script.size() || !file.commit()) {
+        qCWarning(lcAutoHide) << "couldn't write" << path;
+        return {};
+    }
+    return path;
+}
+
+QByteArray resource(const QString &path)
+{
+    QFile file(path);
+    return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+}
+
+// Loads a script into KWin under a name and runs it; then() is called once it's running.
+void runScript(QObject *context, const QString &path, const QString &name, std::function<void()> then = {})
+{
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, name})), context);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, context, [name, then](QDBusPendingCallWatcher *watcher) {
+        watcher->deleteLater();
+        const QDBusPendingReply<int> reply = *watcher;
+        if (reply.isError() || reply.value() < 0) {
+            qCWarning(lcAutoHide) << "KWin didn't load" << name << reply.error().message();
+            return;
+        }
+        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(u"org.kde.KWin"_s,
+                                                                                u"/Scripting/Script"_s + QString::number(reply.value()),
+                                                                                u"org.kde.kwin.Script"_s,
+                                                                                u"run"_s));
+        if (then) {
+            then();
+        }
+    });
+}
 }
 
 DockManager::~DockManager()
@@ -118,37 +162,13 @@ void DockManager::loadPointerScript()
     QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {FollowingPointerScript}));
     const QString name = followPointer ? FollowingPointerScript : PointerScript;
 
-    // KWin loads scripts from files: write ours out of the resources.
-    QFile resource(u":/harbour/pointer.js"_s);
-    if (!resource.open(QIODevice::ReadOnly)) {
-        return;
-    }
-    QByteArray script = resource.readAll();
+    QByteArray script = resource(u":/harbour/pointer.js"_s);
     if (followPointer) {
         script.replace("const followPointer = false;", "const followPointer = true;");
     }
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u"/harbour-pointer.js"_s;
-    // Earlier versions copied the read-only resource file, and QSaveFile won't replace
-    // a file it can't write.
-    QFile::remove(path);
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly) || file.write(script) != script.size() || !file.commit()) {
-        qCWarning(lcAutoHide) << "couldn't write" << path;
-        return;
+    if (const QString path = writeScript(u"harbour-pointer.js"_s, script); !path.isEmpty()) {
+        runScript(this, path, name);
     }
-    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, name})), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [](QDBusPendingCallWatcher *watcher) {
-        watcher->deleteLater();
-        const QDBusPendingReply<int> reply = *watcher;
-        if (reply.isError() || reply.value() < 0) {
-            qCWarning(lcAutoHide) << "KWin didn't load the pointer script:" << reply.error().message();
-            return;
-        }
-        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(u"org.kde.KWin"_s,
-                                                                                u"/Scripting/Script"_s + QString::number(reply.value()),
-                                                                                u"org.kde.kwin.Script"_s,
-                                                                                u"run"_s));
-    });
 }
 
 void DockManager::setCursorScreen(const QString &screenName)
@@ -173,28 +193,15 @@ void DockManager::setPointerAtEdge(const QString &screenName, bool atEdge)
 
 void DockManager::queryCursor()
 {
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u"/harbour-cursor.js"_s;
-    if (m_cursorQueries == 0) {
-        QFile::remove(path);
-        if (!QFile::copy(u":/harbour/cursor.js"_s, path)) {
-            qCWarning(lcAutoHide) << "couldn't write" << path;
+    if (m_cursorScript.isEmpty()) {
+        m_cursorScript = writeScript(u"harbour-cursor.js"_s, resource(u":/harbour/cursor.js"_s));
+        if (m_cursorScript.isEmpty()) {
             return;
         }
     }
     // A fresh name each time: KWin takes a moment to let go of an unloaded script.
     const QString name = u"harbour-cursor-"_s + QString::number(++m_cursorQueries);
-    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, name})), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [name](QDBusPendingCallWatcher *watcher) {
-        watcher->deleteLater();
-        const QDBusPendingReply<int> reply = *watcher;
-        if (reply.isError() || reply.value() < 0) {
-            qCWarning(lcAutoHide) << "KWin didn't load the cursor script:" << reply.error().message();
-            return;
-        }
-        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(u"org.kde.KWin"_s,
-                                                                                u"/Scripting/Script"_s + QString::number(reply.value()),
-                                                                                u"org.kde.kwin.Script"_s,
-                                                                                u"run"_s));
+    runScript(this, m_cursorScript, name, [name] {
         // Not straight away: KWin reads the file on another thread once it's run.
         QTimer::singleShot(2s, [name] {
             QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {name}));

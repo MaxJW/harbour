@@ -355,6 +355,10 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       (no change), per-dock window lists (the second dock costs ~1.4 MB in all). Allocator stats: ~14 MB of heap in
       use at start, 18.7 MB after use; the rest of the ~30 MB is Qt/KF6 libraries' own data. The remaining large
       piece is the QApplication/QStyle stack that native menus need.
+- [x] Code tidy before v0.1.1: no unused QML-exposed methods/properties, QML functions/properties or files (checked by
+      script); no debug output or TODOs left. The duplicated "load a KWin script, then run it" code is one helper
+      (`runScript`, `writeScript` in dockmanager.cpp); an unused include dropped. Tagged **v0.1.1** (0.1.1 in
+      CMake and the PKGBUILD).
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 
