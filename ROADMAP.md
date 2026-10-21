@@ -229,6 +229,15 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       enter without leave (the dock never auto-hid in tests). `edgeprobe stay` keeps one plugged in for the session.
       Also `HARBOUR_WRAP` (e.g. `env WAYLAND_DEBUG=1`) for the dock process.
 - ⚠ Not yet seen on the real session: all of the above was verified in the nested harness only.
+- [x] Menus always open above their item (user saw a two-entry menu cover the icon): small menus fit below the
+      anchor, so the default positioner opened them downwards. Now Qt's `_q_waylandPopupAnchor/Gravity = TopEdge`
+      and slide-only constraint adjustment (`NativeMenu::popupAbove`). Verified with `t-menuplace.sh`.
+- [x] Same physical size on every screen (`MatchPhysicalSize`, default on; KCM checkbox). Each dock's `sizeScale` =
+      its screen's logical px/mm ÷ the primary's, along the diagonal (Qt doesn't swap a rotated screen's physical
+      size), rounded to 0.05, clamped 0.5–2; 1 when a screen reports no size. User's screens (Qt-reported):
+      DP-1 4.288 px/mm, HDMI-A-1 3.645 px/mm → 0.85, so 50 px icons become 43 px on the portrait screen.
+      ⚠ Only the fallback (scale 1, virtual outputs report no size) runs in the harness; the 0.85 is checked by the
+      numbers, not on screen.
 
 ## Notes for the user
 

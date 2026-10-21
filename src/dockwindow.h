@@ -38,6 +38,9 @@ class DockWindow : public QQuickView
     /// The dock on the screen the user last used: the one that stays up with
     /// auto-hide off, and whose icons minimise animations aim at.
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged)
+    /// How much bigger or smaller than set the dock is drawn on this screen, so it is
+    /// the same physical size as on the primary screen (see DockManager).
+    Q_PROPERTY(qreal sizeScale READ sizeScale NOTIFY sizeScaleChanged)
 
 public:
     /// `shared` is the DockModel instance all docks use.
@@ -55,10 +58,14 @@ public:
     qreal blurRadius() const { return m_blurRadius; }
     void setBlurRadius(qreal radius);
 
+    qreal sizeScale() const { return m_sizeScale; }
+    void setSizeScale(qreal scale);
+
 Q_SIGNALS:
     void globalOriginChanged();
     void blurChanged();
     void activeChanged();
+    void sizeScaleChanged();
 
 protected:
     bool event(QEvent *event) override;
@@ -80,6 +87,7 @@ private:
     BlurBehind *m_blur = nullptr;
     QRectF m_blurRect;
     qreal m_blurRadius = 0;
+    qreal m_sizeScale = 1;
     AutoHideController *m_autoHide = nullptr;
     bool m_active = true;
 

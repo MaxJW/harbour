@@ -10,6 +10,9 @@
 #include <QQmlEngine>
 #include <QScreen>
 
+#include <algorithm>
+#include <cmath>
+
 using namespace Qt::StringLiterals;
 
 DockManager::DockManager(QQmlEngine *engine, HarbourSettings *settings, OutputOrder *outputOrder, QObject *parent)
@@ -35,6 +38,7 @@ DockManager::DockManager(QQmlEngine *engine, HarbourSettings *settings, OutputOr
         syncScreens();
     });
     connect(m_outputOrder, &OutputOrder::orderChanged, this, &DockManager::syncScreens);
+    connect(m_settings, &HarbourSettings::matchPhysicalSizeChanged, this, &DockManager::updateSizeScales);
     connect(m_settings, &HarbourSettings::screenModeChanged, this, &DockManager::syncScreens);
 
     m_revealTimer.setSingleShot(true);
@@ -108,6 +112,37 @@ void DockManager::syncScreens()
         const auto primary = m_docks.find(primaryScreen());
         setActive(primary != m_docks.end() ? primary->second.get() : m_docks.begin()->second.get());
     }
+    updateSizeScales();
+}
+
+namespace
+{
+// Logical pixels per millimetre, along the diagonal so a rotated screen's swapped
+// physical size doesn't matter; 0 when the screen doesn't report its size.
+qreal density(const QScreen *screen)
+{
+    const QSizeF mm = screen->physicalSize();
+    const QSize px = screen->geometry().size();
+    if (mm.width() < 1 || mm.height() < 1) {
+        return 0;
+    }
+    return std::hypot(px.width(), px.height()) / std::hypot(mm.width(), mm.height());
+}
+}
+
+void DockManager::updateSizeScales()
+{
+    const QScreen *primary = primaryScreen();
+    const qreal reference = primary ? density(primary) : 0;
+    for (const auto &[screen, dock] : m_docks) {
+        qreal scale = 1;
+        const qreal own = density(screen);
+        if (m_settings->matchPhysicalSize() && reference > 0 && own > 0) {
+            // Rounded, so near-identical screens don't end up a pixel apart.
+            scale = std::clamp(std::round(own / reference * 20) / 20, 0.5, 2.0);
+        }
+        dock->setSizeScale(scale);
+    }
 }
 
 void DockManager::removeDock(QScreen *screen)
@@ -137,6 +172,9 @@ void DockManager::addDock(QScreen *screen)
     connect(raw->autoHide(), &AutoHideController::userRevealed, this, [this, raw] {
         setActive(raw);
     });
+
+    connect(screen, &QScreen::physicalSizeChanged, this, &DockManager::updateSizeScales);
+    connect(screen, &QScreen::geometryChanged, this, &DockManager::updateSizeScales);
 
     raw->show();
     m_docks.emplace(screen, std::move(dock));

@@ -43,6 +43,21 @@ KCM.SimpleKCM {
             }
         }
 
+        QQC2.CheckBox {
+            text: i18nc("@option:check", "Same physical size on every screen")
+            checked: root.settings.matchPhysicalSize
+            onToggled: root.settings.matchPhysicalSize = checked
+
+            QQC2.ToolTip.text: i18nc("@info:tooltip", "Screens with fewer pixels per inch get a proportionally smaller dock, so it looks the same size as on the main screen. The sizes shown here are for the main screen.")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+
+            KCM.SettingStateBinding {
+                configObject: root.settings
+                settingName: "matchPhysicalSize"
+            }
+        }
+
         RowLayout {
             Kirigami.FormData.label: i18nc("@label:slider", "Magnification:")
             spacing: Kirigami.Units.smallSpacing

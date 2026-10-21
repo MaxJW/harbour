@@ -44,6 +44,8 @@ private:
     void removeDock(QScreen *screen);
     void setActive(DockWindow *dock);
     QScreen *primaryScreen() const;
+    /// Gives every dock its size scale (MatchPhysicalSize).
+    void updateSizeScales();
 
     QQmlEngine *m_engine;
     HarbourSettings *m_settings;

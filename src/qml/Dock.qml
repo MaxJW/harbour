@@ -21,7 +21,8 @@ Item {
 
     // Metrics, all derived from the icon size so the dock scales as a whole. A new size
     // animates; the window and the reserved space go straight to what they need.
-    readonly property real targetIconSize: HarbourSettings.iconSize
+    // Scaled per screen so the dock is the same physical size everywhere (DockManager).
+    readonly property real targetIconSize: Math.round(HarbourSettings.iconSize * dockWindow.sizeScale)
     property real iconSize: targetIconSize
     Behavior on iconSize {
         enabled: root.populated
@@ -41,7 +42,7 @@ Item {
         return Math.round(size * 0.6);
     }
 
-    readonly property real magnifiedIconSize: Math.max(targetIconSize, HarbourSettings.magnifiedIconSize)
+    readonly property real magnifiedIconSize: Math.max(targetIconSize, Math.round(HarbourSettings.magnifiedIconSize * dockWindow.sizeScale))
     readonly property real gap: Math.max(4, Math.round(iconSize * 0.1))
     readonly property real padding: paddingFor(iconSize)
     readonly property real bottomGap: 6

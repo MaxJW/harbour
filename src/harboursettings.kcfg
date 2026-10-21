@@ -41,6 +41,10 @@
       <min>24</min>
       <max>256</max>
     </entry>
+    <entry name="matchPhysicalSize" key="MatchPhysicalSize" type="Bool">
+      <label>Scale the dock on each screen by its pixel density, so it is the same physical size as on the primary screen</label>
+      <default>true</default>
+    </entry>
     <entry name="glassOpacity" key="GlassOpacity" type="Int">
       <label>Glass opacity, 0 clear to 100 opaque</label>
       <default>50</default>

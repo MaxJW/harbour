@@ -181,6 +181,15 @@ void DockWindow::updateExclusiveZone()
     m_layerWindow->setExclusiveZone(permanent ? reserved : -1);
 }
 
+void DockWindow::setSizeScale(qreal scale)
+{
+    if (!qFuzzyCompare(scale, m_sizeScale)) {
+        m_sizeScale = scale;
+        qCInfo(lcAutoHide) << "size scale on" << screen()->name() << scale;
+        Q_EMIT sizeScaleChanged();
+    }
+}
+
 void DockWindow::setActive(bool active)
 {
     if (m_active == active) {
