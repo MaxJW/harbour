@@ -63,8 +63,62 @@ Item {
     readonly property bool pointerInside: hoverHandler.hovered || dropArea.containsDrag
     readonly property bool pointerOverDock: pointerInside
                                             && pointerX >= tasksRow.x - gap && pointerX <= tasksRow.x + tasksRow.width + gap
-    readonly property bool magnifying: pointerOverDock && dragIcon === null && !menuOpen
+    readonly property bool magnifying: (magnifyHeld ? frozenMagnify : pointerOverDock) && dragIcon === null
                                        && autoHide.state !== AutoHideController.Hiding
+
+    // While a menu (or stack) is open the dock stays magnified around where it was opened,
+    // and once it closes picks up from wherever the pointer is, gliding rather than jumping.
+    // Menus call holdMagnification() before placing themselves above the enlarged icon.
+    property bool magnifyHeld: false
+    property real frozenPointerX: 0
+    property bool frozenMagnify: false
+    property real centreOffset: 0
+    readonly property real magnifyCentreX: (magnifyHeld ? frozenPointerX : pointerX) + centreOffset
+
+    function holdMagnification() {
+        // Hover stops while a menu is open, so going straight from one item's menu to
+        // another's, pointerX is stale; the last pointer position Qt saw isn't.
+        const p = DockTools.cursorPosition();
+        const local = slide.mapFromGlobal(p.x, p.y);
+        const overRow = local.x >= tasksRow.x - gap && local.x <= tasksRow.x + tasksRow.width + gap;
+        if (!magnifyHeld) {
+            frozenMagnify = pointerOverDock;
+            frozenPointerX = pointerX;
+        }
+        if (overRow) {
+            frozenPointerX = local.x;
+        }
+        centreSlide.stop();
+        centreOffset = 0;
+        magnifyHeld = true;
+    }
+
+    function releaseMagnification() {
+        if (!magnifyHeld) {
+            return;
+        }
+        magnifyHeld = false;
+        centreOffset = frozenPointerX - pointerX;
+        centreSlide.restart();
+    }
+
+    // Closing a menu lets go, unless a right-click on another item is about to open its
+    // own (noteMenuClosed() runs first and arranges that).
+    onMenuOpenChanged: {
+        if (!menuOpen && menuAfterRelease === null) {
+            releaseMagnification();
+        }
+    }
+
+    NumberAnimation {
+        id: centreSlide
+
+        target: root
+        property: "centreOffset"
+        to: 0
+        duration: 150
+        easing.type: Easing.OutCubic
+    }
     property real magnifyAmount: magnifying ? 1 : 0
     Behavior on magnifyAmount {
         NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
@@ -149,6 +203,9 @@ Item {
                 root.menuAfterRelease = null;
                 if (item) {
                     item.contextMenu();
+                }
+                if (!root.menuOpen) {
+                    root.releaseMagnification();
                 }
             }
         }
@@ -240,7 +297,7 @@ Item {
         }
         const extra = (maxZoom - 1) * amount;
         // Clamped to the dock, so the fade-out after leaving past an end doesn't slide it.
-        const centre = Math.max(tasksRow.x, Math.min(tasksRow.x + tasksRow.width, pointerX));
+        const centre = Math.max(tasksRow.x, Math.min(tasksRow.x + tasksRow.width, magnifyCentreX));
         const t = Math.max(-1, Math.min(1, (x - centre) / magnifyRange));
         return x + extra * magnifyRange * (t / 2 + Math.sin(Math.PI * t) / (2 * Math.PI));
     }

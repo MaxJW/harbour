@@ -42,6 +42,9 @@ Item {
 
     readonly property alias mouseArea: mouseArea
     readonly property alias icon: image
+    // The icon as drawn (magnified and shifted): menus open above this, since the dock
+    // stays magnified while they're open.
+    readonly property Item shownItem: visual
     default property alias decorations: bouncer.data
 
     width: dock.iconSize + dock.gap

@@ -271,6 +271,11 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       hidden with the pointer away; up over the window after resting on the bottom row; hides again; same with
       auto-hide off; back up when fullscreen ends. ⚠ Games that confine the pointer and scroll at the screen edge
       (RTS) will bring the dock up when scrolling down; not seen on the real session yet.
+- [x] Magnification holds while a menu or stack is open (user request) and resumes after, gliding from the held
+      point to the pointer (150 ms). Menus call `Dock.holdMagnification()` before placing themselves, and anchor to
+      the icon as drawn (`DockSlot.shownItem`), so they sit above the enlarged icon. Right-clicking straight to another
+      item moves the hold to it (the last pointer position Qt saw; hover stops while a menu is open); the hold is only
+      let go when no menu is about to open (`noteMenuClosed` now runs before `menuOpen` drops). `t-menuhold.sh`.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

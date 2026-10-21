@@ -329,7 +329,10 @@ T.Menu {
             return;
         }
         // Same anchoring trick as DockMenu.
-        const p = stack.mapToItem(dock.menuAnchor.parent, (stack.width - contentWidth_) / 2, -4);
+        // Above the stack as drawn (it stays magnified while the popup is open).
+        dock.holdMagnification();
+        const top = stack.shownItem.mapToItem(dock.menuAnchor.parent, stack.width / 2, 0);
+        const p = Qt.point(top.x - contentWidth_ / 2, top.y - 4);
         dock.menuAnchor.x = p.x;
         dock.menuAnchor.y = p.y;
         dock.menuAnchor.width = contentWidth_;
@@ -347,14 +350,14 @@ T.Menu {
         if (mode === "grid") {
             DockTools.clearBlurBehind(glass);
         }
+        // Now, not once the closing animation is over: the click that closed it must
+        // not open it again. And before menuOpen drops (see Dock.onMenuOpenChanged).
+        dock.noteMenuClosed(stack);
         if (dock.currentMenu === stackPopup) {
             dock.currentMenu = null;
             dock.menuOpen = false;
         }
         dock.autoHide.release();
-        // Now, not once the closing animation is over: the click that closed it must
-        // not open it again.
-        dock.noteMenuClosed(stack);
     }
     onClosed: destroy(1000) // see DockMenu
 

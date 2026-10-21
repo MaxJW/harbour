@@ -23,7 +23,8 @@ NativeMenu {
     function showAbove(item: Item) {
         owner = item;
         build();
-        popupAbove(item, 8);
+        dock.holdMagnification();
+        popupAbove(item.shownItem ?? item, 8);
     }
 
     onAboutToShow: {
@@ -32,12 +33,13 @@ NativeMenu {
         dock.autoHide.hold();
     }
     onAboutToHide: {
+        // First, so a switch to another item's menu is known before menuOpen drops.
+        dock.noteMenuClosed(owner);
         if (dock.currentMenu === menu) {
             dock.currentMenu = null;
             dock.menuOpen = false;
         }
         dock.autoHide.release();
-        dock.noteMenuClosed(owner);
         // A triggered action runs after the menu hides; let it, and Qt, finish first.
         destroy(1000);
     }
