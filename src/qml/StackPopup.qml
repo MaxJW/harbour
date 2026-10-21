@@ -119,6 +119,7 @@ T.Menu {
                         sourceSize.height: height
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
+                        antialiasing: true // smooth edges when tilted
 
                         Behavior on scale {
                             NumberAnimation { duration: 90 }
@@ -150,6 +151,9 @@ T.Menu {
                             elide: Text.ElideMiddle
                             color: fanItem.hovered ? palette.highlightedText
                                                    : (stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85))
+                            // Drawn from the glyph outlines, so it stays smooth however far the
+                            // fan tilts it (cached bitmaps or distance fields pixelate when rotated).
+                            renderType: Text.CurveRendering
                             font.pixelSize: 13
                             font.weight: fanItem.isFolderLink ? Font.DemiBold : Font.Medium
                         }

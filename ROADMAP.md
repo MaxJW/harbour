@@ -244,6 +244,11 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       grab when the menu closes (`releaseDockPointer`). `t-hover.sh` fails without the fix ("after-escape: STUCK"),
       passes with it.
 - [x] Name label felt laggy: slide between icons 140 ms → 70 ms, fade 110 → 90 ms.
+- [x] Fan labels looked pixelated when tilted (user screenshot, NVIDIA). Not reproducible in the harness (smooth
+      there either way). Fan text now uses `Text.CurveRendering` (glyph outlines, no cached bitmaps/distance fields)
+      and tilted icons `antialiasing: true`. ⚠ Needs the user's eyes on the real session.
+- Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
+  outside the repo; the system file belongs to the spotify-launcher package.
 
 ## Notes for the user
 
