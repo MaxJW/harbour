@@ -43,7 +43,10 @@ DockMenu {
         }
         if (!dock.isPermanent(dockIcon)) {
             if (dockIcon.model.HasLauncher) {
-                addEntry(qsTr("Unpin from Dock"), "window-unpin", () => tasksModel.requestRemoveLauncher(launcherUrl));
+                addEntry(qsTr("Unpin from Dock"), "window-unpin", () => {
+                    dockIcon.leaving = true;
+                    tasksModel.requestRemoveLauncher(launcherUrl);
+                });
             } else {
                 addEntry(qsTr("Pin to Dock"), "window-pin", () => tasksModel.requestAddLauncher(launcherUrl));
             }

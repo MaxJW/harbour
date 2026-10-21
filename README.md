@@ -18,7 +18,8 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 
 - **Auto-hide that stays out of the way.** The dock slides away and comes back when you push against the bottom edge. It uses a real KWin screen edge, so it never reveals over fullscreen games or video. As an option, it stays up whenever no window is underneath it.
 - **Magnification** that follows the pointer smoothly. Icons at rest are drawn pixel-exact, so they stay sharp.
-- **Bounces** when an app launches and when an app asks for attention.
+- **Bounces** when an app launches and when an app asks for attention. While the dock is hidden, an app that wants you peeks up out of the screen edge (never over a fullscreen game).
+- **Animated everywhere else too.** Apps that quit shrink away as their neighbours close the gap. A dropped icon glides into its slot. The name label slides between icons. Size changes animate. Stacks gather back in when they close.
 - **Genie minimise.** An optional KWin effect (Genie, Scale or Suck) that pours windows into their own dock icon.
 - **Stacks.** Folders after the separator (Downloads by default) open as a macOS-style **fan**, a glass **grid** or a native **list**, newest first. To pin another folder, drop it between the dock's icons or add it in settings. Drop files on a stack to move them into its folder.
 - **Trash** at the end of the dock, with Open and Empty Trash. Drop files on it to bin them.
@@ -116,12 +117,13 @@ systemctl --user stop harbour.service   # if the installed one is running
 ./build/bin/harbour
 ```
 
-The UI tests need `kwin_wayland`, `spectacle`, ImageMagick and PyGObject with GTK 3. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
+The UI tests need `kwin_wayland`, `spectacle`, ImageMagick, Pillow and PyGObject with GTK 3. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
 
 ```sh
 tests/ui/harness.sh tests/ui/t-switch.sh   # one-click menu switching
 tests/ui/harness.sh tests/ui/t-stress.sh   # menus and stacks opened, switched and closed quickly, over and over
 tests/ui/harness.sh tests/ui/t-folders.sh  # pin a folder by dropping it, then reorder and remove it in settings
+tests/ui/harness.sh tests/ui/t-anim.sh     # animations captured frame by frame, plus the attention peek
 ```
 
 Screenshots and logs land in `build/ui-tests/`. `ROADMAP.md` records the design decisions and what's been verified.

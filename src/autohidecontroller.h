@@ -22,6 +22,11 @@ class ScreenEdge;
  * Before the edge is re-armed (which makes KWin hide the surface) the window
  * presents one frame with the dock fully off-screen, so a later reveal never
  * shows a stale frame. With auto-hide turned off the dock simply stays Shown.
+ *
+ * Peeking: while Hidden, an app asking for attention briefly pops up out of the
+ * screen edge. The edge is disarmed so KWin shows the surface again, QML draws just
+ * that icon, and once it's done the edge is re-armed as after a hide. Pushing
+ * against the edge meanwhile reveals the dock as usual.
  */
 class AutoHideController : public QObject
 {
@@ -34,6 +39,10 @@ class AutoHideController : public QObject
     /// No window overlaps the dock on its screen (set from QML). With ShowWhenClear the
     /// dock then stays up instead of auto-hiding.
     Q_PROPERTY(bool screenClear READ screenClear WRITE setScreenClear NOTIFY screenClearChanged)
+    /// Something wants attention (set from QML); peek while hidden.
+    Q_PROPERTY(bool peekRequested READ peekRequested WRITE setPeekRequested NOTIFY peekRequestedChanged)
+    /// Peeking out of the screen edge while hidden.
+    Q_PROPERTY(bool peeking READ peeking NOTIFY peekingChanged)
 
 public:
     enum State {
@@ -58,6 +67,10 @@ public:
     bool screenClear() const { return m_screenClear; }
     void setScreenClear(bool clear);
 
+    bool peekRequested() const { return m_peekRequested; }
+    void setPeekRequested(bool requested);
+    bool peeking() const { return m_peeking; }
+
     /// Called once the window's first frame is on screen.
     void start();
 
@@ -81,6 +94,8 @@ Q_SIGNALS:
     void revealedChanged();
     void stateChanged();
     void screenClearChanged();
+    void peekRequestedChanged();
+    void peekingChanged();
     /// The user brought this dock up (see reveal()).
     void userRevealed();
     /// Present one more frame, then call hiddenFramePresented().
@@ -95,6 +110,9 @@ private:
     void setRevealed(bool revealed);
     void maybeScheduleHide();
     void applyAutoHideSetting();
+    /// Starts or ends a peek to match the request, if Hidden.
+    void updatePeek();
+    void setPeeking(bool peeking);
 
     ScreenEdge *m_edge;
     HarbourSettings *m_settings;
@@ -108,6 +126,8 @@ private:
     bool m_pointerInside = false;
     bool m_armed = false; // KWin was asked to hide the surface
     int m_holds = 0;
+    bool m_peekRequested = false;
+    bool m_peeking = false;
 
     QTimer m_revealTimer;
     QTimer m_hideTimer;

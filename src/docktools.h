@@ -41,6 +41,8 @@ public:
     /// Has the compositor blur behind an item (a rounded rect) in whatever window it is
     /// shown in, e.g. a stack popup's glass panel. Call once the window is shown.
     Q_INVOKABLE void blurBehind(QQuickItem *item, qreal radius) const;
+    /// Removes the blur blurBehind() set on the item's window.
+    Q_INVOKABLE void clearBlurBehind(QQuickItem *item) const;
 
     /// KWin's window view for the given windows ("Show All Windows").
     Q_INVOKABLE void showWindows(const QVariantList &windowIds) const;

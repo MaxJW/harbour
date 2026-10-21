@@ -67,6 +67,16 @@ DockWindow::DockWindow(QQmlEngine *engine, QScreen *screen, HarbourSettings *set
             }
         });
     });
+    connect(m_autoHide, &AutoHideController::peekingChanged, this, [this] {
+        if (m_autoHide->peeking()) {
+            // The edge is off and the surface shows again; a hidden frame still pending
+            // from before is moot (the peek ending asks for a fresh one).
+            m_wantHiddenFrame = false;
+            m_hiddenFrameSynced = false;
+            m_armed = false;
+            m_framesWhileArmed = 0;
+        }
+    });
     connect(m_edge, &ScreenEdge::attachedChanged, this, &DockWindow::updateInputRegion);
 
     connect(this, &QQuickWindow::afterSynchronizing, this, [this] {

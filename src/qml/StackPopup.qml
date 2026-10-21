@@ -40,7 +40,7 @@ T.Menu {
     // Stands in for a menu here; owner is what Dock.shouldOpenMenu() compares against.
     readonly property Item owner: stack
 
-    // 0 → 1 as the fan opens.
+    // 0 → 1 as the fan opens, and back as it closes.
     property real opening: 0
 
     popupType: QQC2.Popup.Window
@@ -173,6 +173,10 @@ T.Menu {
         Item {
             anchors.fill: parent
             visible: stackPopup.mode === "grid"
+            // Grows out of the stack below it, and shrinks back into it.
+            opacity: Math.min(1, stackPopup.opening * 1.5)
+            scale: 0.92 + 0.08 * stackPopup.opening
+            transformOrigin: Item.Bottom
 
             // The same glass as the dock, with the compositor blurring behind it.
             DockBackground {
@@ -273,7 +277,26 @@ T.Menu {
         property: "opening"
         from: 0
         to: 1
-        duration: 420
+        duration: stackPopup.mode === "fan" ? 420 : 160
+        easing.type: stackPopup.mode === "fan" ? Easing.Linear : Easing.OutCubic
+        // The blur goes on once the grid is at full size, and off as it closes.
+        onFinished: {
+            if (stackPopup.mode === "grid") {
+                DockTools.blurBehind(glass, glass.radius);
+            }
+        }
+    }
+
+    // Closing gathers everything back into the stack. Only closes this process starts
+    // (a click on the dock, an item, Escape) can animate: when the compositor dismisses
+    // the popup, its surface is already gone.
+    exit: Transition {
+        NumberAnimation {
+            property: "opening"
+            to: 0
+            duration: stackPopup.mode === "fan" ? 200 : 120
+            easing.type: Easing.InCubic
+        }
     }
 
     function iconFor(url: url, isDir: bool): url {
@@ -314,24 +337,22 @@ T.Menu {
         dock.menuOpen = true;
         dock.autoHide.hold();
     }
-    onOpened: {
-        if (mode === "grid") {
-            DockTools.blurBehind(glass, glass.radius);
-        } else {
-            openAnimation.start();
-        }
-    }
+    onOpened: openAnimation.start()
     onAboutToHide: {
+        openAnimation.stop();
+        if (mode === "grid") {
+            DockTools.clearBlurBehind(glass);
+        }
         if (dock.currentMenu === stackPopup) {
             dock.currentMenu = null;
             dock.menuOpen = false;
         }
         dock.autoHide.release();
-    }
-    onClosed: {
+        // Now, not once the closing animation is over: the click that closed it must
+        // not open it again.
         dock.noteMenuClosed(stack);
-        destroy(1000); // see DockMenu
     }
+    onClosed: destroy(1000) // see DockMenu
 
     Component {
         id: listMenuComponent

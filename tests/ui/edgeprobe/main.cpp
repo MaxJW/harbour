@@ -27,6 +27,13 @@ int main(int argc, char **argv) {
         if (!fi.isActive()) return 1;
         fi.authenticate(QStringLiteral("edgeprobe"), QStringLiteral("dock tests"));
         const QString cmd = QString::fromLatin1(argv[1]);
+        if (cmd == u"stay") {
+            // Keeps a pointer device plugged in: the virtual backend has none of its
+            // own, so without this every probe run would add and remove one, and
+            // clients would see the pointer appear (enter) and vanish (no leave).
+            mark(argv[1]);
+            return app.exec();
+        }
         if (cmd == u"move" || cmd == u"click") {
             fi.pointer_motion_absolute(wl_fixed_from_double(atof(argv[2])), wl_fixed_from_double(atof(argv[3])));
             if (cmd == u"click") {

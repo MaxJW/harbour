@@ -24,6 +24,10 @@ Item {
     // While dragged, the subclass positions the icon itself (in slot coordinates).
     property bool lifted: false
     property point liftPosition
+    // Once dropped, the icon glides from where it was let go (in row coordinates)
+    // into its slot; settleProgress runs from 1 to 0.
+    property point settleFrom
+    property real settleProgress: 0
 
     readonly property bool isDockSlot: true
 
@@ -34,7 +38,7 @@ Item {
     readonly property real zoom: lifted ? 1 : (shownRight - shownLeft) / width
     readonly property real shift: lifted ? 0 : (shownLeft + shownRight) / 2 - (restLeft + width / 2)
     // Drawn at exactly its resting size (bouncing only moves it).
-    readonly property bool atRest: !lifted && appear === 1 && Math.abs(zoom - 1) < 0.002
+    readonly property bool atRest: !lifted && appear === 1 && Math.abs(zoom - 1) < 0.002 && !dock.resizing
 
     readonly property alias mouseArea: mouseArea
     readonly property alias icon: image
@@ -48,7 +52,7 @@ Item {
 
         width: slot.width
         height: slot.height
-        z: slot.lifted ? 1 : 0
+        z: slot.lifted || settleAnimation.running ? 1 : 0
 
         transform: [
             Scale {
@@ -58,8 +62,8 @@ Item {
                 yScale: slot.zoom * slot.appear
             },
             Translate {
-                x: slot.lifted ? slot.liftPosition.x : slot.shift
-                y: slot.lifted ? slot.liftPosition.y : 0
+                x: slot.lifted ? slot.liftPosition.x : slot.shift + (slot.settleFrom.x - slot.x) * slot.settleProgress
+                y: slot.lifted ? slot.liftPosition.y : slot.settleFrom.y * slot.settleProgress
             }
         ]
 
@@ -83,8 +87,9 @@ Item {
                 x: slot.dock.gap / 2
                 width: slot.dock.iconSize
                 height: slot.dock.iconSize
-                sourceSize.width: slot.dock.iconSize * Screen.devicePixelRatio
-                sourceSize.height: slot.dock.iconSize * Screen.devicePixelRatio
+                // The size being animated to, so a resize renders it once, at the end.
+                sourceSize.width: slot.dock.targetIconSize * Screen.devicePixelRatio
+                sourceSize.height: slot.dock.targetIconSize * Screen.devicePixelRatio
                 source: slot.iconSource
                 smooth: false
                 visible: slot.atRest
@@ -95,7 +100,7 @@ Item {
                 }
             }
 
-            // While scaled (magnified, popping in, dragged), a texture rendered once at the
+            // While scaled (magnified, popping in, dragged, resizing), a texture rendered once at the
             // largest size the icon is ever shown at, mipmapped down, so magnification never
             // re-renders the icon.
             Image {
@@ -150,6 +155,28 @@ Item {
         duration: 280
         easing.type: Easing.OutBack
         easing.overshoot: 1.2
+    }
+
+    onLiftedChanged: {
+        if (!lifted) {
+            settleHome(Qt.point(x + liftPosition.x, liftPosition.y));
+        }
+    }
+
+    function settleHome(from: point) {
+        settleFrom = from;
+        settleProgress = 1;
+        settleAnimation.restart();
+    }
+
+    NumberAnimation {
+        id: settleAnimation
+
+        target: slot
+        property: "settleProgress"
+        to: 0
+        duration: 260
+        easing.type: Easing.OutCubic
     }
 
     function popIn() {

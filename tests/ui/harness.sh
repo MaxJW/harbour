@@ -5,12 +5,13 @@
 #   tests/ui/harness.sh <test-script> [outputs]
 #
 # Needs a build with -DHARBOUR_BUILD_UI_TESTS=ON (for edgeprobe), plus spectacle and
-# ImageMagick. HARBOUR_BUILD_DIR picks the build tree (default: build/), and
-# HARBOUR_EXTRA_LOG_RULES adds Qt logging rules for Harbour. Screenshots and logs go to
-# <build>/ui-tests/.
+# ImageMagick. HARBOUR_BUILD_DIR picks the build tree (default: build/),
+# HARBOUR_EXTRA_LOG_RULES adds Qt logging rules for Harbour, and HARBOUR_WRAP prefixes
+# its command (e.g. "env WAYLAND_DEBUG=1"). Screenshots and logs go to <build>/ui-tests/.
 #
 # The test script is sourced inside the session with these available:
 #   $CI (work dir), $W/$H (output size), probe <edgeprobe args>, snap <name> [crop],
+#   grab <name> <x> <y> <w> <h> <count> <interval-ms> (a fast burst of frames),
 #   pos <label> (dock item centre x from the geometry log), reveal <x>
 HERE=$(dirname "$(readlink -f "$0")")
 if [ -z "$INSIDE_CI" ]; then
@@ -38,6 +39,13 @@ cp ~/.config/kdeglobals "$CI/config/" 2> /dev/null
 cp ~/.config/harbourrc "$CI/config/" 2> /dev/null
 printf '[Plugins]\nscreenedgeEnabled=false\n' > "$CI/config/kwinrc"
 export XDG_CONFIG_HOME=$CI/config
+# grab.py takes screenshots through KWin, which only serves apps whose desktop file
+# lists the interface: give python3 one, on a data path of this session's own.
+mkdir -p "$CI/data/applications" "$CI/cache"
+printf '[Desktop Entry]\nType=Application\nName=UI test grabber\nExec=%s\nNoDisplay=true\nX-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n' \
+    "$(readlink -f "$(command -v python3)")" > "$CI/data/applications/harbour-ui-grab.desktop"
+export XDG_DATA_DIRS=$CI/data:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+export XDG_CACHE_HOME=$CI/cache
 
 SOCKET=wl-harbour-ci-$$
 kwin_wayland --virtual --width $W --height $H --output-count "$OUTPUTS" --socket "$SOCKET" --no-lockscreen \
@@ -46,14 +54,19 @@ KWIN=$!
 for i in $(seq 1 50); do [ -S "$XDG_RUNTIME_DIR/$SOCKET" ] && break; sleep 0.1; done
 export WAYLAND_DISPLAY=$SOCKET
 export QT_QPA_PLATFORM=wayland
+# A pointer for the whole session (see edgeprobe's "stay").
+"$PROBE" stay > /dev/null 2>&1 &
+STAY=$!
+sleep 0.3
 
 QT_FORCE_STDERR_LOGGING=1 QT_MESSAGE_PATTERN='%{time boot} %{category}: %{message}' \
     QT_LOGGING_RULES="qt.qpa.services.warning=false;harbour.geometry.info=true;${HARBOUR_EXTRA_LOG_RULES}" \
-    "$HARBOUR_BIN" > "$CI/harbour.log" 2>&1 &
+    $HARBOUR_WRAP "$HARBOUR_BIN" > "$CI/harbour.log" 2>&1 &
 HARBOUR=$!
 sleep 3
 
 probe() { "$PROBE" "$@" > /dev/null; }
+grab() { python3 "$HERE/grab.py" "$SHOTS/$1" "${@:2}"; }
 snap() {
     spectacle -b -n -f -o "$SHOTS/$1.png" 2> /dev/null
     [ -n "$2" ] && magick "$SHOTS/$1.png" -crop "$2" "$SHOTS/$1.png"
@@ -65,6 +78,6 @@ source "$TEST"
 
 if kill -0 $HARBOUR 2> /dev/null; then echo "harbour: alive"; else echo "harbour: DIED"; fi
 grep -iE 'warn|error|TypeError|qml' "$CI/harbour.log" | sort | uniq -c | head -15
-kill $HARBOUR 2> /dev/null
+kill $HARBOUR $STAY 2> /dev/null
 sleep 0.3
 kill $KWIN 2> /dev/null

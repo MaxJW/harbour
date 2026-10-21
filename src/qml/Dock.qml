@@ -19,16 +19,35 @@ Item {
 
     readonly property string permanentLauncher: shared.permanentLauncher
 
-    // Metrics, all derived from the icon size so the dock scales as a whole.
-    readonly property real iconSize: HarbourSettings.iconSize
-    readonly property real magnifiedIconSize: Math.max(iconSize, HarbourSettings.magnifiedIconSize)
+    // Metrics, all derived from the icon size so the dock scales as a whole. A new size
+    // animates; the window and the reserved space go straight to what they need.
+    readonly property real targetIconSize: HarbourSettings.iconSize
+    property real iconSize: targetIconSize
+    Behavior on iconSize {
+        enabled: root.populated
+        NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+    }
+    readonly property bool resizing: iconSize !== targetIconSize
+    // The largest size since the resize began, so the window doesn't resize every frame.
+    property real heldIconSize: targetIconSize
+    onTargetIconSizeChanged: heldIconSize = Math.max(iconSize, targetIconSize)
+    readonly property real windowIconSize: resizing ? Math.max(heldIconSize, targetIconSize) : targetIconSize
+
+    function paddingFor(size: real): real {
+        return Math.round(size * 0.14);
+    }
+    // ⚠ Bounce height and period are first guesses; calibrate against a Mac.
+    function bounceHeightFor(size: real): real {
+        return Math.round(size * 0.6);
+    }
+
+    readonly property real magnifiedIconSize: Math.max(targetIconSize, HarbourSettings.magnifiedIconSize)
     readonly property real gap: Math.max(4, Math.round(iconSize * 0.1))
-    readonly property real padding: Math.round(iconSize * 0.14)
+    readonly property real padding: paddingFor(iconSize)
     readonly property real bottomGap: 6
     readonly property real dockHeight: iconSize + padding * 2
     readonly property real labelSpace: 44
-    // ⚠ Bounce height and period are first guesses; calibrate against a Mac.
-    readonly property real bounceHeight: Math.round(iconSize * 0.6)
+    readonly property real bounceHeight: bounceHeightFor(iconSize)
     readonly property int bouncePeriod: 640
 
     // Magnification. maxZoom is the peak scale under the pointer; the falloff spans
@@ -54,9 +73,9 @@ Item {
     readonly property real plateTop: height - dockHeight - bottomGap
 
     // Read by DockWindow.
-    readonly property real windowHeight: bottomGap + padding
-        + Math.max(magnifiedIconSize, iconSize + bounceHeight) + labelSpace + 8
-    readonly property real reservedHeight: dockHeight + bottomGap
+    readonly property real windowHeight: bottomGap + paddingFor(windowIconSize)
+        + Math.max(magnifiedIconSize, windowIconSize + bounceHeightFor(windowIconSize)) + labelSpace + 8
+    readonly property real reservedHeight: targetIconSize + paddingFor(targetIconSize) * 2 + bottomGap
     // Where the pointer is accepted while the dock is shown: the dock plus the gap
     // below it, so moving down to the screen edge never counts as leaving.
     // While magnified, the enlarged icons poking above the plate count too.
@@ -147,6 +166,7 @@ Item {
     readonly property Item slideContainer: slide
     readonly property TaskManager.TasksModel tasks: tasksModel
     readonly property Item menuAnchor: menuAnchorItem
+    readonly property Item peekLayer: peekLayerItem
 
     // The model and desktop info are shared by the docks on all screens (DockModel).
     readonly property TaskManager.TasksModel tasksModel: shared.tasksModel
@@ -264,11 +284,13 @@ Item {
         if (existing) {
             existing.stopAt = null;
             existing.kind = kind;
+            updatePeekRequest();
             return;
         }
         now = Date.now();
         bounces[key] = { start: now, kind: kind, stopAt: null };
         bounceCount = Object.keys(bounces).length;
+        updatePeekRequest();
         // Give up on launches that never produce a window.
         if (kind === "launch") {
             bounceTimeout.createObject(root, { key: key }).start();
@@ -286,6 +308,21 @@ Item {
     function finishBounce(key: string) {
         delete bounces[key];
         bounceCount = Object.keys(bounces).length;
+        updatePeekRequest();
+    }
+
+    // While hidden, an app bouncing for attention peeks out of the screen edge, unless a
+    // fullscreen window (a game, a video) has the screen.
+    function updatePeekRequest() {
+        let attention = false;
+        for (const key in bounces) {
+            attention = attention || bounces[key].kind === "attention";
+        }
+        let fullscreen = false;
+        for (let i = 0; attention && i < overlapModel.count; ++i) {
+            fullscreen = fullscreen || overlapModel.data(overlapModel.index(i, 0), TaskManager.AbstractTasksModel.IsFullScreen) === true;
+        }
+        autoHide.peekRequested = attention && !fullscreen;
     }
 
     function bounceOffset(key: string, time: real): real {
@@ -339,6 +376,15 @@ Item {
 
     function iconCreated(icon: DockIcon) {
         const key = icon.appKey;
+        const ghost = ghosts[key];
+        if (ghost) {
+            delete ghosts[key];
+            ghost.destroy();
+        }
+        if (pendingSettle && pendingSettle.key === key && Date.now() - pendingSettle.at < 1000) {
+            icon.settleHome(pendingSettle.from);
+            pendingSettle = null;
+        }
         liveKeys[key] = (liveKeys[key] || 0) + 1;
         if (icon.model.IsStartup) {
             startBounce(key, "launch");
@@ -352,6 +398,87 @@ Item {
         lastSeen[key] = Date.now();
         if (wasStartup) {
             stopBounce(key);
+        }
+    }
+
+    // ── Leaving ───────────────────────────────────────────────────────────────
+    // An app that quits (or is unpinned) shrinks away where it was while its
+    // neighbours close the gap. Plasma also removes rows when a launcher turns into a
+    // running app; if the same app reappears, its ghost goes at once.
+    property var ghosts: ({})
+
+    function shrinkAway(icon: DockIcon) {
+        const key = icon.appKey;
+        const zoom = (icon.shownRight - icon.shownLeft) / icon.width;
+        const size = iconSize * zoom;
+        const ghost = ghostComponent.createObject(slide, {
+            x: icon.shownLeft + gap / 2 * zoom,
+            y: tasksRow.y + iconSize - size - icon.bounceOffset,
+            size: size,
+            source: icon.iconSource,
+        });
+        if (ghosts[key]) {
+            ghosts[key].destroy();
+        }
+        ghosts[key] = ghost;
+        ghost.finished.connect(() => {
+            if (ghosts[key] === ghost) {
+                delete ghosts[key];
+            }
+            ghost.destroy();
+        });
+    }
+
+    Connections {
+        target: root.shared.ready ? root.tasksModel : null
+
+        function onRowsAboutToBeRemoved(parent, first, last) {
+            if (!root.populated || parent.valid) {
+                return;
+            }
+            for (let row = first; row <= last; ++row) {
+                const icon = taskRepeater.itemAt(row);
+                // Startups and pinned apps are replaced by another row for the same app.
+                if (icon && !icon.dragged && (icon.leaving || (icon.running && !icon.model.HasLauncher))) {
+                    root.shrinkAway(icon);
+                }
+            }
+        }
+    }
+
+    Component {
+        id: ghostComponent
+
+        Item {
+            id: ghost
+
+            property real size
+            property alias source: ghostImage.source
+            signal finished
+
+            width: size
+            height: size
+
+            Image {
+                id: ghostImage
+
+                anchors.fill: parent
+                sourceSize.width: root.magnifiedIconSize * Screen.devicePixelRatio
+                sourceSize.height: root.magnifiedIconSize * Screen.devicePixelRatio
+                mipmap: true
+                smooth: true
+                transformOrigin: Item.Bottom
+            }
+
+            ParallelAnimation {
+                running: true
+                onFinished: ghost.finished()
+
+                // Shrinks exactly as the gap closes (the row's move transition), so it
+                // always fits between its neighbours.
+                NumberAnimation { target: ghostImage; property: "scale"; to: 0; duration: 220; easing.type: Easing.OutCubic }
+                NumberAnimation { target: ghostImage; property: "opacity"; to: 0; duration: 220; easing.type: Easing.InQuad }
+            }
         }
     }
 
@@ -471,9 +598,20 @@ Item {
         }
     }
 
+    // Saving the new order rebuilds every icon, so the dropped one's glide home is
+    // handed over to its replacement (see iconCreated).
+    property var pendingSettle: null
+
     function endDrag() {
         if (!dragIcon) {
             return;
+        }
+        if (!dragRemoving) {
+            pendingSettle = {
+                key: dragIcon.appKey,
+                from: Qt.point(dragIcon.x + dragIcon.liftPosition.x, dragIcon.liftPosition.y),
+                at: Date.now(),
+            };
         }
         if (dragRemoving) {
             const at = tasksRow.mapToItem(slide, dragPoint.x, dragPoint.y);
@@ -547,7 +685,9 @@ Item {
         height: root.height
         // Deliberately never made invisible: off-screen it is clipped away, but the
         // first frame still builds its pipelines, so the first reveal doesn't stutter.
-        y: root.hiddenOffset
+        // Set, never bound: a binding to hiddenOffset would snap a shown dock away
+        // whenever the size changes (animations don't remove bindings).
+        Component.onCompleted: y = root.hiddenOffset
 
         HoverHandler {
             id: hoverHandler
@@ -588,7 +728,7 @@ Item {
 
             // Adding or removing an icon re-centres the row; glide rather than jump.
             Behavior on x {
-                enabled: root.populated && root.dragIcon === null
+                enabled: root.populated && root.dragIcon === null && !root.resizing
                 NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
 
@@ -635,16 +775,57 @@ Item {
             }
         }
 
+        // Fades in over the icon under the pointer, slides across to the next one, and
+        // fades out where it was.
         NameLabel {
             id: nameLabel
 
             dark: root.dark
             readonly property DockSlot target: root.hoveredIcon
+            readonly property bool wanted: target !== null && root.dragIcon === null && !root.menuOpen
+            // The icon it belongs to, kept while it fades out.
+            property DockSlot owner: null
+            // What's left of the slide from the previous icon.
+            property real slideX: 0
 
-            visible: target !== null && root.dragIcon === null && !root.menuOpen
-            text: target ? target.label : ""
-            x: target ? Math.round((target.shownLeft + target.shownRight) / 2 - width / 2) : 0
-            y: target ? Math.round(tasksRow.y + root.iconSize * (1 - target.zoom) - target.bounceOffset - height - 10) : 0
+            function homeX(): real {
+                return Math.round((owner.shownLeft + owner.shownRight) / 2 - width / 2);
+            }
+
+            onTargetChanged: {
+                if (!target || target === owner) {
+                    return;
+                }
+                if (owner && opacity > 0) {
+                    const from = x;
+                    owner = target;
+                    slideX = from - homeX();
+                    labelSlide.restart();
+                } else {
+                    owner = target;
+                    slideX = 0;
+                }
+            }
+
+            visible: owner !== null && opacity > 0
+            opacity: wanted ? 1 : 0
+            text: owner ? owner.label : ""
+            x: owner ? homeX() + slideX : 0
+            y: owner ? Math.round(tasksRow.y + root.iconSize * (1 - owner.zoom) - owner.bounceOffset - height - 10) : 0
+
+            Behavior on opacity {
+                NumberAnimation { duration: 110 }
+            }
+
+            NumberAnimation {
+                id: labelSlide
+
+                target: nameLabel
+                property: "slideX"
+                to: 0
+                duration: 140
+                easing.type: Easing.OutCubic
+            }
         }
 
         DropArea {
@@ -683,6 +864,20 @@ Item {
                 }
                 target = null;
             }
+        }
+    }
+
+    // Icons peeking out of the screen edge while the dock is hidden (DockIcon puts them here).
+    Item {
+        id: peekLayerItem
+
+        anchors.fill: parent
+    }
+
+    // A hidden dock stays fully out of sight when its size changes.
+    onHiddenOffsetChanged: {
+        if (!autoHide.revealed && !slideAnimation.running) {
+            slide.y = hiddenOffset;
         }
     }
 

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import org.kde.taskmanager as TaskManager
 import Harbour
 
@@ -23,6 +24,9 @@ DockSlot {
     readonly property bool demandsAttention: model.IsDemandingAttention === true
                                              || LauncherEntries.urgent(launcherUrl, LauncherEntries.revision)
     onDemandsAttentionChanged: demandsAttention ? dock.startBounce(appKey, "attention") : dock.stopBounce(appKey)
+
+    // Being unpinned from its menu: shrinks away rather than vanishing (see Dock).
+    property bool leaving: false
 
     // Captured at creation: required properties can already be gone during destruction.
     property string createdKey
@@ -84,6 +88,22 @@ DockSlot {
             radius: height / 2
             color: "#0a84ff"
         }
+    }
+
+    // Peeking up out of the screen edge while the dock is hidden and this app wants
+    // attention: the same bounce, from below the edge to almost the whole icon.
+    Image {
+        parent: icon.dock.peekLayer
+        visible: icon.dock.autoHide.peeking && icon.demandsAttention && icon.bounceOffset > 0
+        x: icon.restLeft + icon.dock.gap / 2
+        y: parent ? parent.height - icon.bounceOffset / icon.dock.bounceHeight * (icon.dock.iconSize * 0.85 + icon.dock.bottomGap) : 0
+        width: icon.dock.iconSize
+        height: icon.dock.iconSize
+        sourceSize.width: icon.dock.magnifiedIconSize * Screen.devicePixelRatio
+        sourceSize.height: icon.dock.magnifiedIconSize * Screen.devicePixelRatio
+        source: visible ? icon.iconSource : ""
+        mipmap: true
+        smooth: true
     }
 
     Connections {

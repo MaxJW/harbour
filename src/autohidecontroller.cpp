@@ -59,6 +59,7 @@ void AutoHideController::setScreenClear(bool clear)
         return;
     }
     m_screenClear = clear;
+    qCDebug(lcAutoHide) << "screen clear:" << clear;
     Q_EMIT screenClearChanged();
     if (clear) {
         m_clearTimer.start();
@@ -74,7 +75,47 @@ void AutoHideController::setActive(bool active)
     if (m_active != active) {
         m_active = active;
         applyAutoHideSetting();
+        updatePeek();
     }
+}
+
+void AutoHideController::setPeekRequested(bool requested)
+{
+    if (m_peekRequested == requested) {
+        return;
+    }
+    m_peekRequested = requested;
+    Q_EMIT peekRequestedChanged();
+    updatePeek();
+}
+
+void AutoHideController::updatePeek()
+{
+    if (!m_started || m_state != Hidden) {
+        return;
+    }
+    // Only the dock the user last used peeks.
+    const bool want = m_peekRequested && m_active;
+    if (want && !m_peeking) {
+        m_revealTimer.stop();
+        m_edge->deactivate();
+        m_armed = false;
+        setPeeking(true);
+    } else if (!want && m_peeking) {
+        setPeeking(false);
+        // As after a hide: one frame with nothing showing, then the edge goes back on.
+        Q_EMIT hiddenFrameRequested();
+    }
+}
+
+void AutoHideController::setPeeking(bool peeking)
+{
+    if (m_peeking == peeking) {
+        return;
+    }
+    m_peeking = peeking;
+    qCInfo(lcAutoHide) << (peeking ? "peeking" : "peek over");
+    Q_EMIT peekingChanged();
 }
 
 void AutoHideController::applyAutoHideSetting()
@@ -103,8 +144,13 @@ void AutoHideController::pointerEntered()
 
     switch (m_state) {
     case Hidden:
-        // Only reachable once KWin has shown the surface because the edge fired.
-        surfaceExposed();
+        if (m_peeking) {
+            // Pushed against the edge mid-peek (the edge itself is off meanwhile).
+            reveal();
+        } else {
+            // Only reachable once KWin has shown the surface because the edge fired.
+            surfaceExposed();
+        }
         break;
     case Hiding:
         reveal();
@@ -171,13 +217,17 @@ void AutoHideController::slideFinished()
         maybeScheduleHide();
     } else if (m_state == Hiding && !m_revealed) {
         setState(Hidden);
-        Q_EMIT hiddenFrameRequested();
+        if (m_peekRequested && m_active) {
+            updatePeek();
+        } else {
+            Q_EMIT hiddenFrameRequested();
+        }
     }
 }
 
 void AutoHideController::hiddenFramePresented()
 {
-    if (m_state != Hidden || !autoHides()) {
+    if (m_state != Hidden || m_peeking || !autoHides()) {
         return;
     }
     m_edge->activate();
@@ -195,6 +245,7 @@ void AutoHideController::reveal(bool byUser)
     // Harmless if KWin already disarmed the edge; needed for reveals that don't come from it.
     m_edge->deactivate();
     m_armed = false;
+    setPeeking(false);
     setState(Revealing);
     setRevealed(true);
 }

@@ -234,6 +234,18 @@ void DockTools::blurBehind(QQuickItem *item, qreal radius) const
     }
 }
 
+void DockTools::clearBlurBehind(QQuickItem *item) const
+{
+    if (!item || !item->window()) {
+        return;
+    }
+    if (auto *blur = item->window()->findChild<BlurBehind *>(QString(), Qt::FindDirectChildrenOnly)) {
+        if (blur->setRegion(QRect(), 0)) {
+            item->window()->update();
+        }
+    }
+}
+
 void DockTools::moveToFolder(const QList<QUrl> &urls, const QUrl &folder) const
 {
     if (!urls.isEmpty()) {

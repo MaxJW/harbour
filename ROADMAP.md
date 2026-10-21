@@ -206,8 +206,29 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - [x] Divider stress test (`t-divider.sh`, after the user saw crashes "messing with the divider"): 15 rounds of
       clicks/right-clicks/menus plus drags on and across it, no crash. The user's two crashes (21:51, 21:52) were
       with the 21:47 package and match the deleted-menu crash fixed after it.
-- [ ] Animation pass: quit shrink-out, drop settle, name-label slide, smooth size changes, attention peek while
-      hidden, fan/grid close animation (only for closes the dock starts; compositor-dismissed popups can't animate).
+- [x] Animation pass (2026-10-21), each checked frame by frame in the harness (`t-anim.sh`, `grab.py` grabs bursts
+      through KWin's ScreenShot2 at ~30 ms):
+      - Quit / unpin: a ghost shrinks where the icon was (OutCubic, matching the row's move transition, so it fits the
+        closing gap). Only unpinned running apps and menu unpins; startups and pinned apps are replaced by a row for
+        the same app, and a reappearing app cancels its ghost.
+      - Drop settle: the icon glides from where it was let go into its slot. Saving the order resets the tasks model
+        and rebuilds every delegate, so the drop point is handed to the new delegate (`Dock.pendingSettle`).
+      - Name label: fades in/out (110 ms), slides between icons (140 ms).
+      - Size changes animate (240 ms). Rest images render once at the target size; the mipmapped image is used
+        meanwhile; the window and exclusive zone go straight to their final size (no per-frame resizes).
+      - Fan/grid close: gathers back into the stack (the Popup exit transition). Only closes Harbour starts animate;
+        when the compositor dismisses the popup it just goes. Grid blur goes on after opening, off before closing.
+      - Attention peek: while Hidden, the active dock disarms the edge, draws only the bouncing icon rising out of the
+        screen edge, then re-arms (`AutoHideController::peeking`). Pushing the edge mid-peek reveals. Never over a
+        fullscreen window on that screen. Verified: peek → edge re-armed 33 ms later; push after it reveals; push
+        mid-peek reveals; fullscreen → no peek; no frames rendered while armed.
+- [x] Bug found on the way (predates this pass): changing the icon size made the dock vanish until the next
+      reveal: `slide.y` was bound to `hiddenOffset` and the slide animation doesn't remove the binding, so a new size
+      snapped a shown dock off-screen. Now set imperatively.
+- [x] Harness: the virtual backend has no pointer device, so each probe run plugged one in and out; clients saw
+      enter without leave (the dock never auto-hid in tests). `edgeprobe stay` keeps one plugged in for the session.
+      Also `HARBOUR_WRAP` (e.g. `env WAYLAND_DEBUG=1`) for the dock process.
+- ⚠ Not yet seen on the real session: all of the above was verified in the nested harness only.
 
 ## Notes for the user
 
