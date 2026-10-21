@@ -130,8 +130,10 @@ Item {
     readonly property real plateTop: height - dockHeight - bottomGap
 
     // Read by DockWindow.
+    // Room for a magnified icon at the top of its bounce with its name above: an app
+    // just launched is usually under the pointer.
     readonly property real windowHeight: bottomGap + paddingFor(windowIconSize)
-        + Math.max(magnifiedIconSize, windowIconSize + bounceHeightFor(windowIconSize)) + labelSpace + 8
+        + Math.max(magnifiedIconSize, windowIconSize) + bounceHeightFor(windowIconSize) + labelSpace + 8
     readonly property real reservedHeight: targetIconSize + paddingFor(targetIconSize) * 2 + bottomGap
     // Where the pointer is accepted while the dock is shown: the dock plus the gap
     // below it, so moving down to the screen edge never counts as leaving.
