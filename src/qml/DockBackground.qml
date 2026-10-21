@@ -40,7 +40,7 @@ Item {
         radius: plate.radius
         color: "transparent"
         border.width: 1
-        border.color: plate.dark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.55)
+        border.color: plate.dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.55)
     }
 
     // A hairline outside the rim keeps the plate distinct from busy or light wallpapers.
@@ -62,7 +62,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
-            GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, plate.dark ? 0.32 : 0.75) }
+            GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, plate.dark ? 0.26 : 0.75) }
             GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
         }
     }
