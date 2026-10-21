@@ -890,6 +890,13 @@ Item {
                 if (!target || target === owner) {
                     return;
                 }
+                // The same app in a new delegate (a launcher turning into a starting app):
+                // stay put. The new one isn't laid out yet, so a slide would start from the
+                // wrong place, and the label would swing right and back.
+                if (owner && owner.label === target.label) {
+                    owner = target;
+                    return;
+                }
                 if (owner && opacity > 0) {
                     const from = x;
                     owner = target;
@@ -901,11 +908,19 @@ Item {
                 }
             }
 
-            visible: owner !== null && opacity > 0
+            // Where it last was: an app's delegate can be replaced (a starting app getting
+            // its window), leaving no owner for a frame or two before the new one is hovered.
+            property point lastPosition
+            property string lastText
+
+            visible: (owner !== null || lastText !== "") && opacity > 0
             opacity: wanted ? 1 : 0
-            text: owner ? owner.label : ""
-            x: owner ? homeX() + slideX : 0
-            y: owner ? Math.round(tasksRow.y + root.iconSize * (1 - owner.zoom) - owner.bounceOffset - height - 10) : 0
+            text: owner ? owner.label : lastText
+            x: owner ? homeX() + slideX : lastPosition.x
+            y: owner ? Math.round(tasksRow.y + root.iconSize * (1 - owner.zoom) - owner.bounceOffset - height - 10) : lastPosition.y
+            onXChanged: if (owner) lastPosition.x = x
+            onYChanged: if (owner) lastPosition.y = y
+            onTextChanged: if (owner) lastText = text
 
             Behavior on opacity {
                 NumberAnimation { duration: 90 }
