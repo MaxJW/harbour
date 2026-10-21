@@ -7,6 +7,8 @@
 
 #include <LayerShellQt/Window>
 
+#include <QCoreApplication>
+#include <QMouseEvent>
 #include <QQmlProperty>
 #include <QtMath>
 #include <QQuickItem>
@@ -236,9 +238,18 @@ bool DockWindow::event(QEvent *event)
 
 void DockWindow::pointerAt(const QPoint &position)
 {
-    if (mask().contains(position - globalOrigin())) {
-        m_autoHide->pointerFound();
+    const QPoint local = position - globalOrigin();
+    if (!mask().contains(local)) {
+        return;
     }
+    m_autoHide->pointerFound();
+    // Qt Quick's hover (magnification, the name label) also only learns where the pointer
+    // is from events: give it the ones Wayland didn't send. The next real movement brings
+    // a real enter, and leaving brings a leave as usual.
+    QEnterEvent enter(local, local, position);
+    QCoreApplication::sendEvent(this, &enter);
+    QMouseEvent move(QEvent::MouseMove, local, local, position, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(this, &move);
 }
 
 void DockWindow::updateInputRegion()
