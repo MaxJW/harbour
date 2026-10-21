@@ -322,6 +322,20 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
   - Looked at and left: listing a stack is synchronous (77 entries here; ~10–20 ms for 5000); 1.4 MB installed;
     the systemd unit already restarts on failure only.
 - [x] Dark glass rim slightly softer (user): rim alpha 0.16 → 0.12, top highlight 0.32 → 0.26.
+- [x] Real session after the optimisation pass (user installed it, 3 min up): 49 MB PSS / 37 MB private (was
+      142 / 105), no NVIDIA mappings, 6 threads (was 14); idle 0 CPU and ~1 wakeup/s.
+- [x] Dock hid after closing a stack with a second click while the pointer rested on it (user, over a fullscreen
+      game; also happens over a maximised window). KWin dismisses the popup and sends the dock a leave, and no enter
+      follows until the pointer moves; Wayland can't ask where the pointer is. Now when the pointer is taken by a
+      menu/stack (a leave while held, or within 300 ms after the hold ends) the dock asks KWin: a one-line script
+      (`src/cursor.js`, loaded under a fresh name, run, unloaded 2 s later since KWin reads the file on a thread)
+      calls `dev.harbour.Dock.cursorAt(x, y)`; if that's inside the dock's input region it counts as inside. The hide
+      timer waits at least 250 ms for the answer (it came in ~1 ms). Verified (scratch test): fullscreen and
+      maximised, pointer still → stays up; then moving away → hides; pointer up over the fan when it closes → hides.
+- [x] Name label cut off at the top of a launch bounce (user). The window allowed for the larger of "magnified icon"
+      and "icon + bounce", but a just-launched app is usually under the pointer: magnified *and* bouncing, with its
+      label above. Window height now magnified size + bounce + label space. Verified with a slow-starting test app:
+      label clipped at the bounce peak on the old height, whole on the new.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

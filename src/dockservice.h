@@ -36,6 +36,8 @@ public Q_SLOTS:
     void cursorScreen(const QString &screen);
     /// The pointer reached (or left) the bottom row of this screen (KWin script).
     void pointerAtEdge(const QString &screen, bool atEdge);
+    /// Where the pointer is, in answer to DockManager::queryCursor() (KWin script).
+    void cursorAt(int x, int y);
 
 private:
     DockManager *m_docks;

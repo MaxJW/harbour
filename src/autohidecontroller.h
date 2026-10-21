@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -85,6 +86,8 @@ public:
 
     void pointerEntered();
     void pointerLeft();
+    /// The pointer turned out to be over the dock (see pointerUnknown()).
+    void pointerFound();
     /// The window was exposed again. While the edge is armed that means KWin revealed it,
     /// which arrives a little before pointer enter and also covers touch edge swipes.
     void surfaceExposed();
@@ -110,6 +113,9 @@ Q_SIGNALS:
     void userRevealed();
     /// Present one more frame, then call hiddenFramePresented().
     void hiddenFrameRequested();
+    /// A menu or stack closed after taking the pointer, and nothing says where it is
+    /// now: ask KWin (answered with pointerFound() if it's over the dock).
+    void pointerUnknown();
 
 private:
     /// byUser: brought up by the pointer, an edge, a hold or a shortcut, rather than
@@ -123,6 +129,8 @@ private:
     /// Starts or ends a peek to match the request, if Hidden.
     void updatePeek();
     void setPeeking(bool peeking);
+    /// Emits pointerUnknown(), hiding after a grace period unless the pointer is found.
+    void askWherePointerIs();
 
     ScreenEdge *m_edge;
     HarbourSettings *m_settings;
@@ -134,6 +142,8 @@ private:
     QTimer m_clearTimer;
     bool m_revealed = false;
     bool m_pointerInside = false;
+    bool m_pointerTaken = false; // left while held: a menu or stack took the pointer
+    QElapsedTimer m_sinceRelease; // since the last hold was let go
     bool m_armed = false; // KWin was asked to hide the surface
     int m_holds = 0;
     bool m_peekRequested = false;

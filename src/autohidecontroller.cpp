@@ -181,6 +181,7 @@ void AutoHideController::applyAutoHideSetting()
 void AutoHideController::pointerEntered()
 {
     m_pointerInside = true;
+    m_pointerTaken = false;
     m_hideTimer.stop();
     qCDebug(lcAutoHide) << "pointer entered in" << m_state;
 
@@ -219,9 +220,26 @@ void AutoHideController::surfaceExposed()
     }
 }
 
+void AutoHideController::pointerFound()
+{
+    if (m_state == Shown || m_state == Revealing) {
+        qCDebug(lcAutoHide) << "pointer still over the dock";
+        m_pointerInside = true;
+        m_hideTimer.stop();
+    }
+}
+
 void AutoHideController::pointerLeft()
 {
     m_pointerInside = false;
+    // Menus and stacks take the pointer, and the dock hears that it left even if it
+    // never moved: while one is open (the dock holds, so stays up anyway), or just as
+    // it closes, e.g. KWin dismissing a stack because the dock was clicked.
+    m_pointerTaken = m_holds > 0;
+    if (m_holds == 0 && m_sinceRelease.isValid() && m_sinceRelease.elapsed() < 300 && m_state != Hidden) {
+        askWherePointerIs();
+        return;
+    }
     qCDebug(lcAutoHide) << "pointer left in" << m_state;
 
     if (m_state == Hidden) {
@@ -252,7 +270,28 @@ void AutoHideController::release()
         return;
     }
     --m_holds;
+    // When the menu closes, Wayland doesn't say the pointer is back until it moves. If it
+    // rests where it was, over the dock, the dock should stay: ask.
+    if (m_holds == 0) {
+        m_sinceRelease.start();
+        if (m_pointerTaken && !m_pointerInside) {
+            m_pointerTaken = false;
+            askWherePointerIs();
+            return;
+        }
+    }
     maybeScheduleHide();
+}
+
+void AutoHideController::askWherePointerIs()
+{
+    // Allow a moment for the answer before hiding; the pointer entering or KWin's
+    // answer (pointerFound()) stop the timer.
+    qCDebug(lcAutoHide) << "asking KWin where the pointer is";
+    Q_EMIT pointerUnknown();
+    if ((m_state == Shown || m_state == Revealing) && autoHides()) {
+        m_hideTimer.start(std::max(m_settings->hideDelay(), 250));
+    }
 }
 
 void AutoHideController::slideFinished()

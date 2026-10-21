@@ -45,6 +45,9 @@ public:
     void setCursorScreen(const QString &screenName);
     /// The pointer reached or left this screen's bottom row.
     void setPointerAtEdge(const QString &screenName, bool atEdge);
+    /// Asks KWin where the pointer is; the answer comes to setCursorPosition().
+    void queryCursor();
+    void setCursorPosition(const QPoint &position);
 
 private:
     void syncScreens();
@@ -65,6 +68,7 @@ private:
     QPointer<DockWindow> m_active;
     bool m_pointerScriptLoaded = false;
     bool m_pointerScriptFollows = false;
+    int m_cursorQueries = 0;
 
     // revealFor(): the dock being held up, and when to let go.
     QPointer<DockWindow> m_revealed;

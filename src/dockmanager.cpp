@@ -21,6 +21,7 @@
 #include <cmath>
 
 using namespace Qt::StringLiterals;
+using namespace std::chrono_literals;
 
 DockManager::DockManager(QQmlEngine *engine, HarbourSettings *settings, OutputOrder *outputOrder, QObject *parent)
     : QObject(parent)
@@ -170,6 +171,44 @@ void DockManager::setPointerAtEdge(const QString &screenName, bool atEdge)
     }
 }
 
+void DockManager::queryCursor()
+{
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u"/harbour-cursor.js"_s;
+    if (m_cursorQueries == 0) {
+        QFile::remove(path);
+        if (!QFile::copy(u":/harbour/cursor.js"_s, path)) {
+            qCWarning(lcAutoHide) << "couldn't write" << path;
+            return;
+        }
+    }
+    // A fresh name each time: KWin takes a moment to let go of an unloaded script.
+    const QString name = u"harbour-cursor-"_s + QString::number(++m_cursorQueries);
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, name})), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [name](QDBusPendingCallWatcher *watcher) {
+        watcher->deleteLater();
+        const QDBusPendingReply<int> reply = *watcher;
+        if (reply.isError() || reply.value() < 0) {
+            qCWarning(lcAutoHide) << "KWin didn't load the cursor script:" << reply.error().message();
+            return;
+        }
+        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(u"org.kde.KWin"_s,
+                                                                                u"/Scripting/Script"_s + QString::number(reply.value()),
+                                                                                u"org.kde.kwin.Script"_s,
+                                                                                u"run"_s));
+        // Not straight away: KWin reads the file on another thread once it's run.
+        QTimer::singleShot(2s, [name] {
+            QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {name}));
+        });
+    });
+}
+
+void DockManager::setCursorPosition(const QPoint &position)
+{
+    for (const auto &[screen, dock] : m_docks) {
+        dock->pointerAt(position);
+    }
+}
+
 void DockManager::start()
 {
     syncScreens();
@@ -269,6 +308,7 @@ void DockManager::addDock(QScreen *screen)
     connect(raw->autoHide(), &AutoHideController::userRevealed, this, [this, raw] {
         setActive(raw);
     });
+    connect(raw->autoHide(), &AutoHideController::pointerUnknown, this, &DockManager::queryCursor);
 
     connect(screen, &QScreen::physicalSizeChanged, this, &DockManager::updateSizeScales);
     connect(screen, &QScreen::geometryChanged, this, &DockManager::updateSizeScales);

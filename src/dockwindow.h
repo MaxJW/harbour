@@ -50,6 +50,8 @@ public:
     QPoint globalOrigin() const;
 
     AutoHideController *autoHide() const { return m_autoHide; }
+    /// The pointer is at this global position (see DockManager::queryCursor()).
+    void pointerAt(const QPoint &position);
     bool isActive() const { return m_active; }
     void setActive(bool active);
 

@@ -234,6 +234,13 @@ bool DockWindow::event(QEvent *event)
     return result;
 }
 
+void DockWindow::pointerAt(const QPoint &position)
+{
+    if (mask().contains(position - globalOrigin())) {
+        m_autoHide->pointerFound();
+    }
+}
+
 void DockWindow::updateInputRegion()
 {
     const int stripHeight = m_edge->isAttached() ? EdgeStripHeight : FallbackStripHeight;
