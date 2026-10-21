@@ -12,4 +12,4 @@ Target = plasma-workspace
 [Action]
 Description = Checking whether Harbour needs a rebuild...
 When = PostTransaction
-Exec = /usr/bin/sh -c "echo '==> Harbour was built against the old KWin/Qt. Rebuild it (cd packaging/arch && makepkg -si), then log out and back in.'"
+Exec = /usr/bin/sh -c "echo '==> Harbour was built against the old KWin/Qt. Rebuild it (from the AUR: reinstall harbour-git; from a checkout: cd packaging/arch && makepkg -si), then log out and back in.'"

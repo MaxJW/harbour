@@ -1,0 +1,37 @@
+# Maintainer: Max Wilson <maxjw98 at gmail dot com>
+# AUR package for the latest commit. The source of truth lives in the Harbour repo
+# (packaging/aur/harbour-git); copy PKGBUILD and .SRCINFO to the AUR repo to publish.
+
+pkgname=harbour-git
+pkgver=0.1.1.r0.g7be6397
+pkgrel=1
+pkgdesc='A macOS-style dock for KDE Plasma'
+arch=('x86_64')
+url='https://github.com/MaxJW/harbour'
+license=('GPL-3.0-or-later')
+# The KWin effect is built against the exact KWin version: rebuild this package after KWin updates.
+depends=('qt6-base' 'qt6-declarative' 'layer-shell-qt' 'kwin' 'plasma-workspace' 'kconfig' 'kcoreaddons'
+         'kglobalaccel' 'kio' 'kservice' 'kcmutils' 'kirigami' 'qqc2-desktop-style')
+makedepends=('git' 'cmake' 'extra-cmake-modules' 'ninja' 'plasma-wayland-protocols' 'vulkan-headers')
+provides=('harbour')
+conflicts=('harbour')
+source=('git+https://github.com/MaxJW/harbour.git')
+sha256sums=('SKIP')
+
+pkgver() {
+  cd harbour
+  git describe --long --tags --abbrev=7 | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+build() {
+  cmake -S harbour -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 harbour/packaging/arch/harbour.hook "$pkgdir/usr/share/libalpm/hooks/harbour.hook"
+  install -Dm644 harbour/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
