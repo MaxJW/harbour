@@ -12,6 +12,8 @@
  * draw them pixel-for-pixel at rest and at a higher resolution while magnified.
  *   image://harbour/theme/<icon-name>
  *   image://harbour/cache/<QIcon::cacheKey()>   for icons without a theme name
+ * Either can be prefixed with tile/ (image://harbour/tile/theme/<icon-name>) to even out
+ * an icon drawn as a rounded square, see evenTile() in the .cpp.
  */
 class IconProvider : public QQuickImageProvider
 {
@@ -31,7 +33,8 @@ public:
     using QObject::QObject;
 
     /// URL for an icon given as a QIcon (e.g. a TasksModel decoration) or an icon name.
-    Q_INVOKABLE QUrl iconUrl(const QVariant &icon) const;
+    /// evenTile: draw it at the dock's common tile size and corners if it's a rounded square.
+    Q_INVOKABLE QUrl iconUrl(const QVariant &icon, bool evenTile = false) const;
 
     /// The desktop file's additional actions ("New Private Window" etc.) as
     /// [{text, icon, separator}], in desktop file order.

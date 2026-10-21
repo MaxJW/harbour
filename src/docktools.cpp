@@ -17,7 +17,10 @@
 #include <QDBusPendingCall>
 #include <QHash>
 #include <QIcon>
+#include <QPainter>
 #include <QQuickWindow>
+
+#include <optional>
 
 using namespace Qt::StringLiterals;
 
@@ -41,6 +44,75 @@ KService::Ptr serviceForLauncher(const QUrl &launcherUrl)
     }
     return {};
 }
+
+// App icons drawn as rounded squares ("tiles": many third-party apps, and themes for
+// apps they draw that way) come in every size and corner radius; one filling 96% of its
+// canvas sits beside one filling 80%. Tiles are redrawn on macOS's grid instead, where a
+// tile is 824 of 1024 px with corners of about 22% (the radius Zed's icon uses too).
+// 82% rather than 80% because that reads as the same size as Papirus's circles (87.5%).
+// Anything else (circles, folders, irregular shapes) is left as the theme drew it.
+constexpr qreal TileSide = 0.82;
+constexpr qreal TileRadius = 0.225;
+
+// The rounded square an icon is drawn as, if it is one: its opaque part is square, fills
+// at least 90% of that square (a circle fills 79%), and has straight sides.
+std::optional<QRect> tileRect(const QImage &source)
+{
+    const QImage image = source.convertToFormat(QImage::Format_ARGB32);
+    const auto opaque = [&image](int x, int y) {
+        return qAlpha(reinterpret_cast<const QRgb *>(image.constScanLine(y))[x]) > 127;
+    };
+
+    int left = image.width(), top = image.height(), right = -1, bottom = -1;
+    qint64 count = 0;
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            if (opaque(x, y)) {
+                left = qMin(left, x);
+                right = qMax(right, x);
+                top = qMin(top, y);
+                bottom = qMax(bottom, y);
+                ++count;
+            }
+        }
+    }
+    const QRect box(QPoint(left, top), QPoint(right, bottom));
+    const int side = qMax(box.width(), box.height());
+    if (right < 0 || side < image.width() / 2 || qAbs(box.width() - box.height()) > side / 100) {
+        return std::nullopt;
+    }
+    if (count < 0.9 * box.width() * box.height()) {
+        return std::nullopt;
+    }
+    // A folder's tab or a squarish blob has the area but not four flat sides.
+    const int inset = qMax(1, side / 64);
+    for (int t = side * 3 / 10; t < side * 7 / 10; ++t) {
+        if (!opaque(box.left() + t, box.top() + inset) || !opaque(box.left() + t, box.bottom() - inset)
+            || !opaque(box.left() + inset, box.top() + t) || !opaque(box.right() - inset, box.top() + t)) {
+            return std::nullopt;
+        }
+    }
+    return box;
+}
+
+// The tile part of the icon, at TileSide of the target and clipped to TileRadius corners.
+// Clipping only ever takes off corners that were sharper; rounder ones keep their shape.
+QImage evenTile(const QImage &source, const QRect &tile, const QSize &target)
+{
+    const int side = qRound(TileSide * qMin(target.width(), target.height()));
+    const QPoint origin((target.width() - side) / 2, (target.height() - side) / 2);
+    const QImage scaled = source.copy(tile).scaled(side, side, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    QImage image(target, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(scaled);
+    painter.setBrushOrigin(origin);
+    painter.drawRoundedRect(QRect(origin, QSize(side, side)), side * TileRadius, side * TileRadius);
+    return image;
+}
 }
 
 IconProvider::IconProvider()
@@ -50,8 +122,10 @@ IconProvider::IconProvider()
 
 QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
-    const QString kind = id.section(u'/', 0, 0);
-    const QString key = id.section(u'/', 1);
+    const bool even = id.startsWith(u"tile/");
+    const QString path = even ? id.mid(5) : id;
+    const QString kind = path.section(u'/', 0, 0);
+    const QString key = path.section(u'/', 1);
 
     QIcon icon;
     if (kind == u"theme") {
@@ -64,6 +138,17 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
     }
 
     const QSize target = requestedSize.isValid() ? requestedSize : QSize(128, 128);
+    if (even) {
+        // Looked at twice as large, so the tile is scaled down into place, never up.
+        const QImage large = icon.pixmap(target * 2).toImage();
+        if (const auto tile = tileRect(large)) {
+            const QImage image = evenTile(large, *tile, target);
+            if (size) {
+                *size = image.size();
+            }
+            return image;
+        }
+    }
     QImage image = icon.pixmap(target).toImage();
     // Bitmap-only icons may come back smaller than asked; scale them up so every
     // icon fills its slot the same way.
@@ -76,9 +161,9 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
     return image;
 }
 
-QUrl DockTools::iconUrl(const QVariant &icon) const
+QUrl DockTools::iconUrl(const QVariant &icon, bool evenTile) const
 {
-    const QString prefix = u"image://harbour/"_s;
+    const QString prefix = evenTile ? u"image://harbour/tile/"_s : u"image://harbour/"_s;
 
     if (icon.typeId() == QMetaType::QString) {
         return QUrl(prefix + u"theme/"_s + icon.toString());

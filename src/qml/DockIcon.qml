@@ -41,7 +41,7 @@ DockSlot {
     property point pressOffset
     property point pressPoint
 
-    iconSource: DockTools.iconUrl(model.decoration)
+    iconSource: DockTools.iconUrl(model.decoration, HarbourSettings.evenTiles)
     label: model.AppName || model.display || ""
     running: model.IsWindow === true || model.IsGroupParent === true
     bounceOffset: dock.bounceOffset(appKey, dock.now)

@@ -276,6 +276,17 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       the icon as drawn (`DockSlot.shownItem`), so they sit above the enlarged icon. Right-clicking straight to another
       item moves the hold to it (the last pointer position Qt saw; hover stops while a menu is open); the hold is only
       let go when no menu is about to open (`noteMenuClosed` now runs before `menuOpen` drops). `t-menuhold.sh`.
+- [x] Even out square app icons (`EvenTiles`, default on; KCM checkbox under Behaviour → Icons). User (Papirus-Dark): Helium,
+      paintnotnet and Zed are all rounded squares at different sizes and radii. The provider looks at an app icon at
+      twice the size; if its opaque part is square, fills ≥ 90% of that square (a circle fills 79%) and has four flat
+      sides, the square is redrawn at 82% of the slot with 22.5% corners (macOS's grid is 80%; 82% reads as the same
+      size as Papirus's 87.5% circles). Clipping only takes off corners sharper than that. Only DockIcon asks for it
+      (`image://harbour/tile/...`); stacks and the Trash don't. Verified in the harness on the user's dock at 64 px:
+      Helium 62 → 52 px, paintnotnet 58 → 52, Zed 56 → 52; an off/on pixel diff changes nothing else.
+      t-folders' click points moved with the settings page (row 2 up 843 652, row 1 remove 918 614).
+- Zed's icon: the user's own override `~/.local/share/applications/dev.zed.Zed.desktop` (`Icon=zed_original`, a
+  copy of the package's `hicolor/512x512/apps/zed.png` in `~/.local/share/icons/hicolor/512x512/apps/`). The name
+  has no dash: KDE's icon lookup falls back from `zed-original` to Papirus's `zed` before reaching hicolor.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

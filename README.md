@@ -17,6 +17,7 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 ## Features
 
 - **Auto-hide that stays out of the way.** The dock slides away and comes back when you push against the bottom edge, using a real KWin screen edge. Over a fullscreen game or video it stays hidden until you rest the pointer on the bottom row, then comes up on top. As an option, it stays up whenever no window is underneath it.
+- **Even app icons.** Apps whose icons are rounded squares come in every size and corner shape. Harbour draws those at one size with macOS's corners, beside your theme's round and shaped icons, which it leaves alone.
 - **Magnification** that follows the pointer smoothly, and the files you drag over the dock. Icons at rest are drawn pixel-exact, so they stay sharp.
 - **Bounces** when an app launches and when an app asks for attention. While the dock is hidden, an app that wants you peeks up out of the screen edge (never over a fullscreen game).
 - **Animated everywhere else too.** Apps that quit shrink away as their neighbours close the gap. A dropped icon glides into its slot. The name label slides between icons. Size changes animate. Stacks gather back in when they close.
@@ -94,7 +95,7 @@ Everything lives in **System Settings → Workspace → Dock**, and it's all sto
 | | |
 |---|---|
 | **Look** | Icon size, magnification, glass, the same physical size on every screen |
-| **Behaviour** | Auto-hide, which screen to use, the minimise effect (Genie, Scale, Suck or KDE's own), indicators, bouncing on launch, click-to-minimise |
+| **Behaviour** | Auto-hide, which screen to use, the minimise effect (Genie, Scale, Suck or KDE's own), indicators, bouncing on launch, evened-out square app icons, click-to-minimise |
 | **Folders and Trash** | Add, reorder and remove the folders kept as stacks and pick each one's view (fan, grid or list); show or hide the Trash |
 | **Advanced** | Reveal/hide delays and slide durations |
 

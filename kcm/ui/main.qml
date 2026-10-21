@@ -233,6 +233,24 @@ KCM.SimpleKCM {
             }
         }
 
+        RowLayout {
+            spacing: 0
+
+            QQC2.CheckBox {
+                text: i18nc("@option:check", "Even out square app icons")
+                checked: root.settings.evenTiles
+                onToggled: root.settings.evenTiles = checked
+
+                KCM.SettingStateBinding {
+                    configObject: root.settings
+                    settingName: "evenTiles"
+                }
+            }
+            Kirigami.ContextualHelpButton {
+                toolTipText: i18nc("@info:tooltip", "App icons drawn as rounded squares come in many sizes and corner shapes. This draws them all at one size with the same corners. Round and other shaped icons are left as they are.")
+            }
+        }
+
         QQC2.CheckBox {
             Kirigami.FormData.label: i18nc("@title:group", "Clicking:")
             text: i18nc("@option:check", "Clicking the active app's icon minimises its windows")
