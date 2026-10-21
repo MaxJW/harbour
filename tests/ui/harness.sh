@@ -64,7 +64,7 @@ STAY=$!
 sleep 0.3
 
 QT_FORCE_STDERR_LOGGING=1 QT_MESSAGE_PATTERN='%{time boot} %{category}: %{message}' \
-    QT_LOGGING_RULES="qt.qpa.services.warning=false;harbour.geometry.info=true;${HARBOUR_EXTRA_LOG_RULES}" \
+    QT_LOGGING_RULES="qt.qpa.services.warning=false;harbour.geometry.info=true;harbour.autohide.info=true;harbour.frames.info=true;${HARBOUR_EXTRA_LOG_RULES}" \
     $HARBOUR_WRAP "$HARBOUR_BIN" > "$CI/harbour.log" 2>&1 &
 HARBOUR=$!
 sleep 3

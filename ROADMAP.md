@@ -287,6 +287,41 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - Zed's icon: the user's own override `~/.local/share/applications/dev.zed.Zed.desktop` (`Icon=zed_original`, a
   copy of the package's `hicolor/512x512/apps/zed.png` in `~/.local/share/icons/hicolor/512x512/apps/`). The name
   has no dash: KDE's icon lookup falls back from `zed-original` to Papirus's `zed` before reaching hicolor.
+- [x] Optimisation pass (user: "142 MB seems like a LOT of memory for just a dock"). Measured on the user's session
+      first: 142 MB PSS (105 MB private) with two docks; idle CPU ~0, no wakeups while idle. In the harness (which
+      renders on the same RTX 3070) one dock was 71 MB at start, +40 MB after opening one stack fan, and 125–208 MB
+      after repeated use. Causes and fixes:
+  - A GPU context per Qt Quick window (each dock, each stack popup) costs ~20 MB of heap + 4 MB of `nvidiactl` on
+    NVIDIA, and isn't given back when a popup closes. Now Qt Quick's **software renderer** by default
+    (`QQuickWindow::setGraphicsApi(Software)`; `QT_QUICK_BACKEND`/`QSG_RHI_BACKEND` still pick a GPU). No shaders
+    are used, so nothing changes visually (compared screenshots: magnified dock, fan with tilted text). Frames:
+    0.1 ms mean, 2 ms worst, 16–17 ms apart during animations on the 60 Hz virtual output; dock CPU over a hover
+    sweep 170 ms vs 250 ms with GL; reveal slide 19 frames in 301 ms, none late. Harness, two screens like the
+    user's: **31 MB at start, 42 MB after heavy use** (stable), against 85 → 132 MB with OpenGL.
+    ⚠ 165 Hz smoothness on the real DP-1 not yet seen (harness output is 60 Hz).
+  - Stack fan/grid loaded image files themselves, full size, in the dock (decoders, threads, freed memory kept).
+    Now previews come from KDE's thumbnailers (`PreviewProvider`, `image://harbourpreview/…`, KIO::PreviewJob with
+    the user's preview settings, cached in ~/.cache/thumbnails), so PDFs and videos get previews too; files without
+    one show their type's icon.
+  - KIO ran its workers as threads in the dock, loading every thumbnailer and codec (HEIF, x265, OpenEXR, PDF) into
+    it. `KIO_ENABLE_WORKER_THREADS=0` unless set: workers are separate, short-lived processes again.
+  - Leak: every frame's timestamp went into a list only cleared when a slide started, so a dock that stays up
+    (auto-hide off, ShowWhenClear) grew without bound. Frames are now timed only during slides, and only with
+    `harbour.frames` logging on. `harbour.autohide`/`harbour.frames` now log warnings only by default (they wrote
+    ~470 journal lines a day); the harness turns them on.
+  - Leak: nameless window icons (games, Wine) were cached forever, one per window: now a 64-entry `QCache`.
+  - The KWin script ran JS inside KWin on every pointer movement. It now follows the pointer only in ScreenMode
+    "cursor" or while some window is fullscreen (Harbour rewrites the script's `followPointer` flag and reloads it
+    when the mode changes). Each variant has its own script name: KWin refuses a load under a name it's still
+    unloading. The file is removed before writing: older versions left it read-only, which QSaveFile won't
+    replace (caught by t-fullscreen/t-screens). Checked by counting the script's D-Bus calls while the pointer
+    wanders over two screens: 0 normally, 6 with a fullscreen window, 0 after it closes, 6 after switching to
+    ScreenMode "cursor" at run time, 0 after switching back.
+  - Full UI suite re-run on the software renderer: all pass (t-folders' click points updated earlier).
+  - The test-only geometry log no longer runs unless `harbour.geometry` is enabled; dead `folderTotal()` removed.
+  - Looked at and left: listing a stack is synchronous (77 entries here; ~10–20 ms for 5000); 1.4 MB installed;
+    the systemd unit already restarts on failure only.
+- [x] Dark glass rim slightly softer (user): rim alpha 0.16 → 0.12, top highlight 0.32 → 0.26.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

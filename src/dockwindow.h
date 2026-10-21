@@ -98,6 +98,7 @@ private:
 
     QMutex m_frameMutex;
     std::vector<std::chrono::steady_clock::time_point> m_frameTimes;
+    std::atomic_bool m_recordFrames = false; // between the start and end of a slide
     std::optional<std::chrono::steady_clock::time_point> m_lastSwap;
     double m_vsyncMs = 1000.0 / 60;
     std::atomic_bool m_armed = false; // KWin has been asked to hide the surface

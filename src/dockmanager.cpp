@@ -13,6 +13,7 @@
 #include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QSaveFile>
 #include <QScreen>
 #include <QStandardPaths>
 
@@ -80,7 +81,10 @@ void DockManager::revealFor(std::chrono::milliseconds duration, const QString &s
 
 namespace
 {
+// One name per variant (see loadPointerScript): KWin takes a moment to let go of an
+// unloaded script, and refuses to load another under the same name meanwhile.
 const auto PointerScript = u"harbour-pointer"_s;
+const auto FollowingPointerScript = u"harbour-pointer-following"_s;
 
 QDBusMessage kwinScripting(const QString &method, const QVariantList &arguments)
 {
@@ -93,27 +97,45 @@ QDBusMessage kwinScripting(const QString &method, const QVariantList &arguments)
 DockManager::~DockManager()
 {
     if (m_pointerScriptLoaded) {
-        QDBusConnection::sessionBus().call(kwinScripting(u"unloadScript"_s, {PointerScript}), QDBus::Block, 500);
+        const QString name = m_pointerScriptFollows ? FollowingPointerScript : PointerScript;
+        QDBusConnection::sessionBus().call(kwinScripting(u"unloadScript"_s, {name}), QDBus::Block, 500);
     }
 }
 
 void DockManager::loadPointerScript()
 {
-    if (m_pointerScriptLoaded) {
+    // Reloaded when ScreenMode changes: the script only follows every pointer movement
+    // while it has to (see pointer.js).
+    const bool followPointer = m_settings->screenMode() == u"cursor";
+    if (m_pointerScriptLoaded && m_pointerScriptFollows == followPointer) {
         return;
     }
     m_pointerScriptLoaded = true;
-    // Unloading first also clears a copy left behind by a Harbour that crashed.
+    m_pointerScriptFollows = followPointer;
+    // Unloading both also clears a copy left behind by a Harbour that crashed.
     QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {PointerScript}));
+    QDBusConnection::sessionBus().asyncCall(kwinScripting(u"unloadScript"_s, {FollowingPointerScript}));
+    const QString name = followPointer ? FollowingPointerScript : PointerScript;
 
-    // KWin loads scripts from files: copy ours out of the resources.
+    // KWin loads scripts from files: write ours out of the resources.
+    QFile resource(u":/harbour/pointer.js"_s);
+    if (!resource.open(QIODevice::ReadOnly)) {
+        return;
+    }
+    QByteArray script = resource.readAll();
+    if (followPointer) {
+        script.replace("const followPointer = false;", "const followPointer = true;");
+    }
     const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + u"/harbour-pointer.js"_s;
+    // Earlier versions copied the read-only resource file, and QSaveFile won't replace
+    // a file it can't write.
     QFile::remove(path);
-    if (!QFile::copy(u":/harbour/pointer.js"_s, path)) {
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(script) != script.size() || !file.commit()) {
         qCWarning(lcAutoHide) << "couldn't write" << path;
         return;
     }
-    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, PointerScript})), this);
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(kwinScripting(u"loadScript"_s, {path, name})), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this, [](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
         const QDBusPendingReply<int> reply = *watcher;

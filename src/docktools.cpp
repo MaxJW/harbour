@@ -6,6 +6,7 @@
 #include <KIO/CopyJob>
 #include <KIO/Global>
 #include <KIO/OpenUrlJob>
+#include <KIO/PreviewJob>
 #include <KService>
 
 #include <QDBusConnection>
@@ -15,9 +16,11 @@
 #include <QGuiApplication>
 #include <QDBusMessage>
 #include <QDBusPendingCall>
-#include <QHash>
+#include <QCache>
 #include <QIcon>
+#include <QLoggingCategory>
 #include <QPainter>
+#include <QPointer>
 #include <QQuickWindow>
 
 #include <optional>
@@ -26,11 +29,11 @@ using namespace Qt::StringLiterals;
 
 namespace
 {
-// Icons that have no theme name, keyed by QIcon::cacheKey(). Only ever grows by the
-// number of distinct nameless window icons seen, which is small.
-QHash<qint64, QIcon> &iconCache()
+// Icons that have no theme name (window icons, e.g. games under Wine), keyed by
+// QIcon::cacheKey(). Every window brings a new one, so only the most recent are kept.
+QCache<qint64, QIcon> &iconCache()
 {
-    static QHash<qint64, QIcon> cache;
+    static QCache<qint64, QIcon> cache(64);
     return cache;
 }
 
@@ -131,7 +134,9 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
     if (kind == u"theme") {
         icon = QIcon::fromTheme(key);
     } else if (kind == u"cache") {
-        icon = iconCache().value(key.toLongLong());
+        if (const QIcon *cached = iconCache().object(key.toLongLong())) {
+            icon = *cached;
+        }
     }
     if (icon.isNull()) {
         icon = QIcon::fromTheme(u"application-x-executable"_s);
@@ -176,7 +181,7 @@ QUrl DockTools::iconUrl(const QVariant &icon, bool evenTile) const
     if (!qicon.name().isEmpty()) {
         return QUrl(prefix + u"theme/"_s + qicon.name());
     }
-    iconCache().insert(qicon.cacheKey(), qicon);
+    iconCache().insert(qicon.cacheKey(), new QIcon(qicon));
     return QUrl(prefix + u"cache/"_s + QString::number(qicon.cacheKey()));
 }
 
@@ -230,6 +235,13 @@ void DockTools::showWindows(const QVariantList &windowIds) const
     QDBusConnection::sessionBus().asyncCall(message);
 }
 
+bool DockTools::logGeometry() const
+{
+    // The same category Dock.qml logs to, so the same logging rules switch it on.
+    static const QLoggingCategory category("harbour.geometry", QtWarningMsg);
+    return category.isInfoEnabled();
+}
+
 int DockTools::mouseButtons() const
 {
     return int(QGuiApplication::mouseButtons());
@@ -248,6 +260,68 @@ bool DockTools::isApplication(const QUrl &url) const
 QString DockTools::iconNameForUrl(const QUrl &url) const
 {
     return KIO::iconNameForUrl(url);
+}
+
+QUrl DockTools::previewUrl(const QUrl &file) const
+{
+    return QUrl(u"image://harbourpreview/"_s + QString::fromLatin1(QUrl::toPercentEncoding(file.toString())));
+}
+
+namespace
+{
+class PreviewResponse : public QQuickImageResponse
+{
+public:
+    PreviewResponse(const QUrl &url, const QSize &size)
+    {
+        // Made on Qt Quick's image loading thread, but KIO jobs belong to the main thread:
+        // the response lives there too, so the job never outlives it mid-callback.
+        moveToThread(qApp->thread());
+        QMetaObject::invokeMethod(this, [this, url, size] {
+            start(url, size);
+        }, Qt::QueuedConnection);
+    }
+
+    QQuickTextureFactory *textureFactory() const override
+    {
+        return QQuickTextureFactory::textureFactoryForImage(m_image);
+    }
+
+    void cancel() override
+    {
+        QMetaObject::invokeMethod(this, [this] {
+            if (m_job) {
+                m_job->kill(KJob::Quietly);
+            }
+            Q_EMIT finished();
+        }, Qt::QueuedConnection);
+    }
+
+private:
+    void start(const QUrl &url, const QSize &size)
+    {
+        // Plugins and size limits from the user's preview settings, as in Dolphin.
+        m_job = new KIO::PreviewJob(KFileItemList{KFileItem(url)}, size);
+        connect(m_job, &KIO::PreviewJob::gotPreview, this, [this](const KFileItem &, const QPixmap &preview) {
+            m_image = preview.toImage();
+        });
+        connect(m_job, &KJob::result, this, [this, url, size] {
+            if (m_image.isNull()) {
+                m_image = QIcon::fromTheme(KIO::iconNameForUrl(url)).pixmap(size).toImage();
+            }
+            Q_EMIT finished();
+        });
+    }
+
+    QPointer<KIO::PreviewJob> m_job;
+    QImage m_image;
+};
+}
+
+QQuickImageResponse *PreviewProvider::requestImageResponse(const QString &id, const QSize &requestedSize)
+{
+    const QSize size = requestedSize.isValid() ? requestedSize : QSize(128, 128);
+    return new PreviewResponse(QUrl(QUrl::fromPercentEncoding(id.toLatin1())), size);
 }
 
 void DockTools::openUrl(const QUrl &url) const
@@ -295,11 +369,6 @@ QVariantList DockTools::folderEntries(const QUrl &folder, int limit) const
         });
     }
     return result;
-}
-
-int DockTools::folderTotal(const QUrl &folder) const
-{
-    return int(QDir(folder.toLocalFile()).entryList(QDir::AllEntries | QDir::NoDotAndDotDot).size());
 }
 
 void DockTools::blurBehind(QQuickItem *item, qreal radius) const

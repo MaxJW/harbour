@@ -29,7 +29,7 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 - **Drag to rearrange**, or drag an icon off the dock to remove it.
 - **Multi-monitor.** A dock on every screen that comes up wherever you push the edge, only on the screen with the pointer, or only on the main screen. It's the same physical size on every screen, scaled by each screen's pixel density.
 - **A System Settings page** (Workspace → Dock) for size, magnification, glass, timings, the minimise effect and more. Changes apply live.
-- **Lightweight.** It draws nothing and uses no CPU while hidden.
+- **Lightweight.** Around 30–40 MB of memory in testing, drawn without a GPU context of its own (KWin composites it like any window). It draws nothing and uses no CPU while hidden.
 - <kbd>Meta</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> turns auto-hide on and off, like <kbd>⌥</kbd><kbd>⌘</kbd><kbd>D</kbd> on a Mac.
 
 <table>

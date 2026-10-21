@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QQmlEngine>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QScreen>
 #include <QTimer>
 
@@ -26,6 +27,22 @@ int main(int argc, char *argv[])
     // made every animation run 2.75x too fast. Advance by wall-clock time instead.
     if (!qEnvironmentVariableIsSet("QSG_USE_SIMPLE_ANIMATION_DRIVER")) {
         qputenv("QSG_USE_SIMPLE_ANIMATION_DRIVER", "1");
+    }
+
+    // Drawn with Qt Quick's software renderer into shared memory, which KWin composites
+    // like any other window. A GPU context per window (both docks, each stack popup) cost
+    // ~25 MB apiece on NVIDIA, never given back after a popup closed: 70 MB at start
+    // and 200 MB after some use, against ~30 and ~40 now. The dock is small 2D content
+    // repainted only where it changes, so frames take well under a millisecond anyway.
+    // QT_QUICK_BACKEND or QSG_RHI_BACKEND still pick a GPU backend.
+    if (!qEnvironmentVariableIsSet("QT_QUICK_BACKEND") && !qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+    }
+
+    // KIO would otherwise run its workers as threads in this process: listing a stack
+    // or making its previews then loads every thumbnailer and image codec into the dock.
+    if (!qEnvironmentVariableIsSet("KIO_ENABLE_WORKER_THREADS")) {
+        qputenv("KIO_ENABLE_WORKER_THREADS", "0");
     }
 
     // QApplication rather than QGuiApplication: the KDE desktop style for menus needs QStyle.
@@ -61,6 +78,7 @@ int main(int argc, char *argv[])
 
     QQmlEngine engine;
     engine.addImageProvider(u"harbour"_s, new IconProvider);
+    engine.addImageProvider(u"harbourpreview"_s, new PreviewProvider);
 
     OutputOrder outputOrder;
     DockManager docks(&engine, settings, &outputOrder);

@@ -247,13 +247,16 @@ void DockWindow::updateInputRegion()
 
 void DockWindow::onFrameSwapped()
 {
-    const auto now = std::chrono::steady_clock::now();
-    {
+    const bool lateFrames = lcFrames().isDebugEnabled();
+    if (m_recordFrames || lateFrames) {
+        const auto now = std::chrono::steady_clock::now();
         QMutexLocker locker(&m_frameMutex);
-        m_frameTimes.push_back(now);
+        if (m_recordFrames) {
+            m_frameTimes.push_back(now);
+        }
         // Any frame that follows another closely is part of an animation; report the
-        // ones that missed a vsync (debug logging only).
-        if (m_lastSwap) {
+        // ones that missed a vsync.
+        if (lateFrames && m_lastSwap) {
             const double interval = std::chrono::duration<double, std::milli>(now - *m_lastSwap).count();
             if (interval < 50 && interval > m_vsyncMs * 1.5) {
                 qCDebug(lcFrames) << "late frame" << interval << "ms";
@@ -293,12 +296,17 @@ void DockWindow::onAutoHideStateChanged()
         }
         QMutexLocker locker(&m_frameMutex);
         m_frameTimes.clear();
+        // Timed only while sliding (and only when someone reads the result): while the
+        // dock stays up, frames would otherwise pile up for as long as it does.
+        m_recordFrames = lcFrames().isInfoEnabled();
         break;
     }
     case AutoHideController::Shown:
+        m_recordFrames = false;
         reportFrameStats("reveal");
         break;
     case AutoHideController::Hidden:
+        m_recordFrames = false;
         reportFrameStats("hide");
         break;
     }
@@ -306,6 +314,9 @@ void DockWindow::onAutoHideStateChanged()
 
 void DockWindow::reportFrameStats(const char *what)
 {
+    if (!lcFrames().isInfoEnabled()) {
+        return;
+    }
     std::vector<std::chrono::steady_clock::time_point> times;
     {
         QMutexLocker locker(&m_frameMutex);

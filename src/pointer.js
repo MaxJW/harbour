@@ -3,9 +3,17 @@
 //  - which screen it's on (for ScreenMode "cursor"), and
 //  - when it's on a screen's bottom row, so a push can still bring the dock up over a
 //    fullscreen window (KWin turns client screen edges off under those).
-// Only changes are sent, so moving the pointer costs a couple of comparisons.
+// Only changes are sent, so each movement costs a couple of comparisons. But following
+// the pointer at all runs this inside KWin for every movement, so it only does while
+// it's needed: in ScreenMode "cursor", or while a window is fullscreen.
+
+// Set by Harbour when it writes this file out: whether ScreenMode is "cursor".
+const followPointer = false;
+
 let lastScreen = null;
 let lastAtEdge = false;
+let tracking = false;
+const fullscreen = new Set();
 
 function update() {
     const pos = workspace.cursorPos;
@@ -22,5 +30,41 @@ function update() {
     }
 }
 
-workspace.cursorPosChanged.connect(update);
-update();
+function retrack() {
+    const want = followPointer || fullscreen.size > 0;
+    if (want === tracking) {
+        return;
+    }
+    tracking = want;
+    if (want) {
+        workspace.cursorPosChanged.connect(update);
+        update();
+    } else {
+        workspace.cursorPosChanged.disconnect(update);
+        if (lastAtEdge) {
+            lastAtEdge = false;
+            callDBus("dev.harbour.dock", "/Dock", "dev.harbour.Dock", "pointerAtEdge", lastScreen || "", false);
+        }
+    }
+}
+
+function watch(window) {
+    const changed = () => {
+        if (window.fullScreen) {
+            fullscreen.add(window);
+        } else {
+            fullscreen.delete(window);
+        }
+        retrack();
+    };
+    window.fullScreenChanged.connect(changed);
+    changed();
+}
+
+workspace.windowAdded.connect(watch);
+workspace.windowRemoved.connect(window => {
+    fullscreen.delete(window);
+    retrack();
+});
+workspace.windowList().forEach(watch);
+retrack();

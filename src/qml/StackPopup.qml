@@ -304,11 +304,8 @@ T.Menu {
     }
 
     function iconFor(url: url, isDir: bool): url {
-        const name = String(url).toLowerCase();
-        if (!isDir && /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/.test(name)) {
-            return url; // images show themselves
-        }
-        return DockTools.iconUrl(DockTools.iconNameForUrl(url));
+        // Files show their preview (photos, PDFs, videos...) or else their type's icon.
+        return isDir ? DockTools.iconUrl(DockTools.iconNameForUrl(url)) : DockTools.previewUrl(url);
     }
 
     function openItem(url: url) {

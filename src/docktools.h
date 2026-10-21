@@ -22,15 +22,32 @@ public:
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
 };
 
+/**
+ * Previews of the files in a stack, from KDE's thumbnailers (what Dolphin shows):
+ *   image://harbourpreview/<percent-encoded file URL>
+ * They're made in KIO's thumbnail worker process and cached in ~/.cache/thumbnails, so
+ * a large photo is never decoded in the dock (that alone cost it ~35 MB for good: the
+ * freed memory stays with the process). Files without a preview get their type's icon.
+ */
+class PreviewProvider : public QQuickAsyncImageProvider
+{
+public:
+    QQuickImageResponse *requestImageResponse(const QString &id, const QSize &requestedSize) override;
+};
+
 /// Helpers for the dock's QML that need KDE frameworks or D-Bus.
 class DockTools : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
+    /// Whether the harbour.geometry log (item positions, for scripted tests) is on.
+    Q_PROPERTY(bool logGeometry READ logGeometry CONSTANT)
 
 public:
     using QObject::QObject;
+
+    bool logGeometry() const;
 
     /// URL for an icon given as a QIcon (e.g. a TasksModel decoration) or an icon name.
     /// evenTile: draw it at the dock's common tile size and corners if it's a rounded square.
@@ -60,13 +77,13 @@ public:
 
     /// Theme icon name for a file or folder, by MIME type (folders get their special icons).
     Q_INVOKABLE QString iconNameForUrl(const QUrl &url) const;
+    /// A file's preview (see PreviewProvider).
+    Q_INVOKABLE QUrl previewUrl(const QUrl &file) const;
     /// Opens a file or folder with its default application.
     Q_INVOKABLE void openUrl(const QUrl &url) const;
     /// A folder's newest entries first, as [{url, name, isDir}], at most `limit` of them.
     /// Synchronous on purpose: stacks need the count to pick their layout before opening.
     Q_INVOKABLE QVariantList folderEntries(const QUrl &folder, int limit) const;
-    /// Number of visible entries in a folder.
-    Q_INVOKABLE int folderTotal(const QUrl &folder) const;
     /// Moves files into a folder (a drop onto a stack), with KIO's usual progress and conflict handling.
     Q_INVOKABLE void moveToFolder(const QList<QUrl> &urls, const QUrl &folder) const;
     /// Expands a leading "~" to the home directory and returns a file URL.

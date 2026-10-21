@@ -746,11 +746,17 @@ Item {
         target: tasksRow
 
         function onWidthChanged() {
-            geometryLogTimer.restart();
+            if (DockTools.logGeometry) {
+                geometryLogTimer.restart();
+            }
         }
     }
 
-    Component.onCompleted: geometryLogTimer.start()
+    Component.onCompleted: {
+        if (DockTools.logGeometry) {
+            geometryLogTimer.start();
+        }
+    }
 
     Component {
         id: poofComponent

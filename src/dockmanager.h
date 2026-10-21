@@ -64,6 +64,7 @@ private:
     std::map<QScreen *, std::unique_ptr<DockWindow>> m_docks;
     QPointer<DockWindow> m_active;
     bool m_pointerScriptLoaded = false;
+    bool m_pointerScriptFollows = false;
 
     // revealFor(): the dock being held up, and when to let go.
     QPointer<DockWindow> m_revealed;
