@@ -23,7 +23,7 @@ KCM.SimpleKCM {
             QQC2.Slider {
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 from: 32
-                to: 128
+                to: 96
                 // Rounded here rather than with stepSize, which draws a crowd of ticks.
                 value: root.settings.iconSize
                 onMoved: {
@@ -42,12 +42,6 @@ KCM.SimpleKCM {
                 opacity: 0.7
                 Layout.minimumWidth: Kirigami.Units.gridUnit * 3
             }
-        }
-
-        QQC2.Label {
-            text: i18nc("@info", "You can also drag the divider in the Dock up or down.")
-            font: Kirigami.Theme.smallFont
-            opacity: 0.7
         }
 
         RowLayout {

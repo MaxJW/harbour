@@ -40,11 +40,11 @@ snap kcm
 
 # Move the new folder first, apply; then remove it, apply. (Positions from the page's
 # layout at this size: the second row's up arrow, the first row's remove button.)
-probe click 853 632; sleep 0.5
+probe click 853 613; sleep 0.5
 probe click 967 855; sleep 1.2   # Apply
 echo "after moving: $(kreadconfig6 --file harbourrc --group Items --key Stacks)"
 snap kcm-moved
-probe click 928 595; sleep 0.5
+probe click 928 576; sleep 0.5
 probe click 967 855; sleep 1.2
 echo "after removing: $(kreadconfig6 --file harbourrc --group Items --key Stacks)"
 snap removed "1000x300+460+780"

@@ -18,7 +18,6 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 
 - **Auto-hide that stays out of the way.** The dock slides away and comes back when you push against the bottom edge. It uses a real KWin screen edge, so it never reveals over fullscreen games or video. As an option, it stays up whenever no window is underneath it.
 - **Magnification** that follows the pointer smoothly, and the files you drag over the dock. Icons at rest are drawn pixel-exact, so they stay sharp.
-- **Drag the divider** up or down to resize the dock, like on a Mac.
 - **Bounces** when an app launches and when an app asks for attention. While the dock is hidden, an app that wants you peeks up out of the screen edge (never over a fullscreen game).
 - **Animated everywhere else too.** Apps that quit shrink away as their neighbours close the gap. A dropped icon glides into its slot. The name label slides between icons. Size changes animate. Stacks gather back in when they close.
 - **Genie minimise.** An optional KWin effect (Genie, Scale or Suck) that pours windows into their own dock icon.

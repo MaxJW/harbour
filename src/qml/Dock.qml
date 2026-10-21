@@ -25,23 +25,14 @@ Item {
     readonly property real targetIconSize: Math.round(HarbourSettings.iconSize * dockWindow.sizeScale)
     property real iconSize: targetIconSize
     Behavior on iconSize {
-        // Follows the divider directly while it's being dragged.
-        enabled: root.populated && !root.resizingByHand
+        enabled: root.populated
         NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
     }
-    // The divider is being dragged up or down to resize the dock (DockSeparator).
-    property bool resizingByHand: false
     readonly property bool resizing: iconSize !== targetIconSize
     // The largest size since the resize began, so the window doesn't resize every frame.
     property real heldIconSize: targetIconSize
     onTargetIconSizeChanged: heldIconSize = Math.max(iconSize, targetIconSize)
-    // While the divider is hovered or dragged, the window is as tall as the largest size
-    // a drag can reach: resizing the window mid-drag would shift the pointer positions
-    // KWin reports (they lag the new size), and the drag would feed on itself.
-    property bool resizeReady: false
-    readonly property real windowIconSize: resizeReady ? Math.max(targetIconSize, Math.round(maxIconSize * dockWindow.sizeScale))
-                                         : resizing ? Math.max(heldIconSize, targetIconSize) : targetIconSize
-    readonly property int maxIconSize: 128
+    readonly property real windowIconSize: resizing ? Math.max(heldIconSize, targetIconSize) : targetIconSize
 
     function paddingFor(size: real): real {
         return Math.round(size * 0.14);
@@ -72,7 +63,7 @@ Item {
     readonly property bool pointerInside: hoverHandler.hovered || dropArea.containsDrag
     readonly property bool pointerOverDock: pointerInside
                                             && pointerX >= tasksRow.x - gap && pointerX <= tasksRow.x + tasksRow.width + gap
-    readonly property bool magnifying: pointerOverDock && dragIcon === null && !menuOpen && !resizingByHand
+    readonly property bool magnifying: pointerOverDock && dragIcon === null && !menuOpen
                                        && autoHide.state !== AutoHideController.Hiding
     property real magnifyAmount: magnifying ? 1 : 0
     Behavior on magnifyAmount {
