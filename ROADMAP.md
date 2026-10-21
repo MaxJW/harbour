@@ -238,6 +238,12 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       DP-1 4.288 px/mm, HDMI-A-1 3.645 px/mm → 0.85, so 50 px icons become 43 px on the portrait screen.
       ⚠ Only the fallback (scale 1, virtual outputs report no size) runs in the harness; the 0.85 is checked by the
       numbers, not on screen.
+- [x] Magnification/label stuck where the pointer entered until a click (user report). Cause: menus open on a
+      press; while a QMenu is open Qt hands it the mouse, so the press's release never reaches the dock and the icon's
+      MouseArea keeps the pointer grab: hover (magnification, label) stops updating. `NativeMenu` now drops that
+      grab when the menu closes (`releaseDockPointer`). `t-hover.sh` fails without the fix ("after-escape: STUCK"),
+      passes with it.
+- [x] Name label felt laggy: slide between icons 140 ms → 70 ms, fade 110 → 90 ms.
 
 ## Notes for the user
 

@@ -1,5 +1,6 @@
 #include "nativemenu.h"
 
+#include <QGuiApplication>
 #include <QIcon>
 #include <QMenu>
 #include <QQmlEngine>
@@ -34,6 +35,21 @@ void NativeMenu::connectMenu()
 {
     connect(m_menu, &QMenu::aboutToShow, this, &NativeMenu::aboutToShow);
     connect(m_menu, &QMenu::aboutToHide, this, &NativeMenu::aboutToHide);
+    connect(m_menu, &QMenu::aboutToHide, this, &NativeMenu::releaseDockPointer);
+}
+
+void NativeMenu::releaseDockPointer()
+{
+    if (!m_dockWindow) {
+        return;
+    }
+    // A button still held (dragging on from a press-and-hold) has nothing stale to drop.
+    if (QGuiApplication::mouseButtons() != Qt::NoButton) {
+        return;
+    }
+    if (QQuickItem *grabber = m_dockWindow->mouseGrabberItem()) {
+        grabber->ungrabMouse();
+    }
 }
 
 void NativeMenu::addAction(const QString &text, const QString &icon, const QJSValue &callback, const QVariantMap &options)
@@ -91,6 +107,13 @@ void NativeMenu::popupAbove(QQuickItem *item, int gap)
     if (!m_menu->isEmpty() && m_menu->actions().constLast()->isSeparator()) {
         m_menu->removeAction(m_menu->actions().constLast());
     }
+
+    // Menus open on a press, and while one is open Qt hands the mouse to it, so the
+    // dock never sees that press's release. The item that took the press would keep the
+    // pointer to itself, and nothing else in the dock (hover: magnification, the name
+    // label) would follow the pointer until the next click. So the grab is dropped once
+    // the menu closes (not now: the press is still being delivered, the grab comes after).
+    m_dockWindow = item->window();
 
     // A popup on Wayland needs to know the window it belongs to.
     m_menu->createWinId();

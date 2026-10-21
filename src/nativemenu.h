@@ -8,6 +8,7 @@
 
 class QMenu;
 class QQuickItem;
+class QQuickWindow;
 
 /**
  * A real KDE context menu (QMenu), the same component Plasma uses for its desktop and
@@ -47,6 +48,10 @@ private:
     NativeMenu(QMenu *menu, QObject *parent);
     void connectMenu();
 
+    /// Lets go of the press that opened the menu (see popupAbove()).
+    void releaseDockPointer();
+
     QPointer<QMenu> m_menu;
     bool m_ownsMenu = true;
+    QPointer<QQuickWindow> m_dockWindow;
 };

@@ -815,7 +815,7 @@ Item {
             y: owner ? Math.round(tasksRow.y + root.iconSize * (1 - owner.zoom) - owner.bounceOffset - height - 10) : 0
 
             Behavior on opacity {
-                NumberAnimation { duration: 110 }
+                NumberAnimation { duration: 90 }
             }
 
             NumberAnimation {
@@ -824,8 +824,9 @@ Item {
                 target: nameLabel
                 property: "slideX"
                 to: 0
-                duration: 140
-                easing.type: Easing.OutCubic
+                // Short: any longer and the label trails behind a moving pointer.
+                duration: 70
+                easing.type: Easing.OutQuad
             }
         }
 
