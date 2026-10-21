@@ -49,3 +49,8 @@ void DockService::cursorScreen(const QString &screen)
 {
     m_docks->setCursorScreen(screen);
 }
+
+void DockService::pointerAtEdge(const QString &screen, bool atEdge)
+{
+    m_docks->setPointerAtEdge(screen, atEdge);
+}

@@ -5,7 +5,7 @@ qt_add_executable(harbour
 set_source_files_properties(qml/StackMenus.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 # Loaded into KWin at run time (DockManager), from a copy in the runtime directory.
-qt_add_resources(harbour "kwinscripts" PREFIX "/harbour" FILES cursorscreen.js)
+qt_add_resources(harbour "kwinscripts" PREFIX "/harbour" FILES pointer.js)
 
 qt_add_qml_module(harbour
     URI Harbour

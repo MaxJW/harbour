@@ -24,6 +24,16 @@ AutoHideController::AutoHideController(ScreenEdge *edge, HarbourSettings *settin
     connect(m_settings, &HarbourSettings::showWhenClearChanged, this, &AutoHideController::applyAutoHideSetting);
     connect(m_settings, &HarbourSettings::screenModeChanged, this, &AutoHideController::applyAutoHideSetting);
 
+    // Over a fullscreen window the pointer has to rest on the bottom row a moment, like
+    // KWin's own edge delay, so sweeping past it in a game doesn't bring the dock up.
+    m_fullscreenEdgeTimer.setSingleShot(true);
+    connect(&m_fullscreenEdgeTimer, &QTimer::timeout, this, [this] {
+        if (m_fullscreen && m_state == Hidden) {
+            qCInfo(lcAutoHide) << "pushed against the edge over a fullscreen window";
+            reveal();
+        }
+    });
+
     // Becoming clear settles briefly first, so dragging a window across the dock
     // doesn't flash it up and down. Becoming covered acts at once (hide delay applies).
     m_clearTimer.setSingleShot(true);
@@ -46,6 +56,11 @@ void AutoHideController::start()
 
 bool AutoHideController::autoHides() const
 {
+    // A fullscreen window has the screen: keep out of its way until pushed for, even
+    // with auto-hide off.
+    if (m_fullscreen) {
+        return true;
+    }
     // Nothing in the way: stay up (on every screen, like an empty desktop should look,
     // or with ScreenMode "cursor" only on the pointer's screen).
     if (m_settings->showWhenClear() && m_clear && (m_active || m_settings->screenMode() != u"cursor")) {
@@ -78,6 +93,31 @@ void AutoHideController::setActive(bool active)
         m_active = active;
         applyAutoHideSetting();
         updatePeek();
+    }
+}
+
+void AutoHideController::setFullscreen(bool fullscreen)
+{
+    if (m_fullscreen == fullscreen) {
+        return;
+    }
+    m_fullscreen = fullscreen;
+    qCInfo(lcAutoHide) << (fullscreen ? "fullscreen window on this screen" : "no fullscreen window");
+    if (!fullscreen) {
+        m_fullscreenEdgeTimer.stop();
+    }
+    Q_EMIT fullscreenChanged();
+    applyAutoHideSetting();
+}
+
+void AutoHideController::pointerAtScreenEdge(bool atEdge)
+{
+    if (!atEdge || !m_fullscreen || m_state != Hidden) {
+        m_fullscreenEdgeTimer.stop();
+        return;
+    }
+    if (!m_fullscreenEdgeTimer.isActive()) {
+        m_fullscreenEdgeTimer.start(150 + m_settings->revealDelay());
     }
 }
 

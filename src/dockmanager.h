@@ -23,8 +23,9 @@ class QScreen;
  * its icons. All docks share one DockModel (tasks, launchers, desktops).
  *
  * With ScreenMode "primary", only Plasma's primary screen gets a dock. With "cursor",
- * the active dock is the one on the screen with the pointer (reported by a small KWin
- * script), and only it stays up.
+ * the active dock is the one on the screen with the pointer, and only it stays up.
+ * A small KWin script (pointer.js) reports the pointer's screen, and when it sits on a
+ * screen's bottom row, which is how a dock comes up over a fullscreen window.
  */
 class DockManager : public QObject
 {
@@ -42,6 +43,8 @@ public:
 
     /// The pointer is now on this screen (ScreenMode "cursor").
     void setCursorScreen(const QString &screenName);
+    /// The pointer reached or left this screen's bottom row.
+    void setPointerAtEdge(const QString &screenName, bool atEdge);
 
 private:
     void syncScreens();
@@ -51,8 +54,8 @@ private:
     QScreen *primaryScreen() const;
     /// Gives every dock its size scale (MatchPhysicalSize).
     void updateSizeScales();
-    /// Loads or unloads the KWin script that reports the pointer's screen.
-    void updateCursorTracking();
+    /// Loads the KWin script that reports on the pointer (once).
+    void loadPointerScript();
 
     QQmlEngine *m_engine;
     HarbourSettings *m_settings;
@@ -60,7 +63,7 @@ private:
     QObject *m_shared = nullptr;
     std::map<QScreen *, std::unique_ptr<DockWindow>> m_docks;
     QPointer<DockWindow> m_active;
-    bool m_cursorTracking = false;
+    bool m_pointerScriptLoaded = false;
 
     // revealFor(): the dock being held up, and when to let go.
     QPointer<DockWindow> m_revealed;

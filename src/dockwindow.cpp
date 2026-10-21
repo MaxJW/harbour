@@ -67,6 +67,15 @@ DockWindow::DockWindow(QQmlEngine *engine, QScreen *screen, HarbourSettings *set
             }
         });
     });
+    // Over a fullscreen window the dock has to be in the overlay layer to be seen; it goes
+    // back below once hidden, so it never sits over a fullscreen window otherwise.
+    const auto updateLayer = [this] {
+        const bool overlay = m_autoHide->fullscreen() && m_autoHide->state() != AutoHideController::Hidden;
+        m_layerWindow->setLayer(overlay ? LayerShellQt::Window::LayerOverlay : LayerShellQt::Window::LayerTop);
+    };
+    connect(m_autoHide, &AutoHideController::fullscreenChanged, this, updateLayer);
+    connect(m_autoHide, &AutoHideController::stateChanged, this, updateLayer);
+
     connect(m_autoHide, &AutoHideController::peekingChanged, this, [this] {
         if (m_autoHide->peeking()) {
             // The edge is off and the surface shows again; a hidden frame still pending

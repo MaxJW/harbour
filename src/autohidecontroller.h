@@ -43,6 +43,10 @@ class AutoHideController : public QObject
     Q_PROPERTY(bool peekRequested READ peekRequested WRITE setPeekRequested NOTIFY peekRequestedChanged)
     /// Peeking out of the screen edge while hidden.
     Q_PROPERTY(bool peeking READ peeking NOTIFY peekingChanged)
+    /// A fullscreen window has this screen (set from QML). The dock stays hidden, and a
+    /// push against the bottom edge (reported by the KWin script, since KWin turns
+    /// client screen edges off under fullscreen windows) brings it up over the window.
+    Q_PROPERTY(bool fullscreen READ fullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
 
 public:
     enum State {
@@ -71,6 +75,11 @@ public:
     void setPeekRequested(bool requested);
     bool peeking() const { return m_peeking; }
 
+    bool fullscreen() const { return m_fullscreen; }
+    void setFullscreen(bool fullscreen);
+    /// The pointer is on (or left) this screen's bottom row.
+    void pointerAtScreenEdge(bool atEdge);
+
     /// Called once the window's first frame is on screen.
     void start();
 
@@ -96,6 +105,7 @@ Q_SIGNALS:
     void screenClearChanged();
     void peekRequestedChanged();
     void peekingChanged();
+    void fullscreenChanged();
     /// The user brought this dock up (see reveal()).
     void userRevealed();
     /// Present one more frame, then call hiddenFramePresented().
@@ -128,6 +138,8 @@ private:
     int m_holds = 0;
     bool m_peekRequested = false;
     bool m_peeking = false;
+    bool m_fullscreen = false;
+    QTimer m_fullscreenEdgeTimer;
 
     QTimer m_revealTimer;
     QTimer m_hideTimer;

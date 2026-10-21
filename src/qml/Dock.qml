@@ -205,6 +205,31 @@ Item {
         value: overlapModel.count === 0
     }
 
+    // Whether one of those windows is fullscreen (a game, a video). Instantiated per row,
+    // since a binding on the model's data() wouldn't see a window go fullscreen.
+    Instantiator {
+        id: fullscreenWatch
+
+        model: overlapModel
+        delegate: QtObject {
+            required property var model
+            readonly property bool fullscreen: model.IsFullScreen === true
+            onFullscreenChanged: Qt.callLater(root.updateFullscreen)
+        }
+        onObjectAdded: Qt.callLater(root.updateFullscreen)
+        onObjectRemoved: Qt.callLater(root.updateFullscreen)
+    }
+
+    function updateFullscreen() {
+        let fullscreen = false;
+        for (let i = 0; i < fullscreenWatch.count; ++i) {
+            const watch = fullscreenWatch.objectAt(i);
+            fullscreen = fullscreen || (watch !== null && watch.fullscreen);
+        }
+        autoHide.fullscreen = fullscreen;
+        updatePeekRequest();
+    }
+
     // Maps a resting x (slide coordinates) to where it is drawn while magnified. The
     // zoom falls off as a raised cosine around the pointer; integrating it gives a
     // layout where the point under the pointer stays put and the dock grows both ways.
@@ -326,11 +351,7 @@ Item {
         for (const key in bounces) {
             attention = attention || bounces[key].kind === "attention";
         }
-        let fullscreen = false;
-        for (let i = 0; attention && i < overlapModel.count; ++i) {
-            fullscreen = fullscreen || overlapModel.data(overlapModel.index(i, 0), TaskManager.AbstractTasksModel.IsFullScreen) === true;
-        }
-        autoHide.peekRequested = attention && !fullscreen;
+        autoHide.peekRequested = attention && !autoHide.fullscreen;
     }
 
     function bounceOffset(key: string, time: real): real {

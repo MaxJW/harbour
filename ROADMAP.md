@@ -262,6 +262,15 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       and attention) only on the active dock; a dock becomes active when the pointer enters it. Verified with two
       virtual outputs (`t-screens.sh`, run with 2 outputs): dock follows the pointer left → right → left; a launch
       clicked on one dock bounces only that dock.
+- [x] Reveal over fullscreen windows (user's choice: "Edge always works", like macOS fullscreen apps). KWin turns
+      client screen edges off under fullscreen windows, so the KWin script (now `src/pointer.js`, always loaded)
+      also reports when the pointer is on a screen's bottom row; resting there 150 ms (+ reveal delay) reveals the
+      dock if a fullscreen window covers that screen. The dock switches to the overlay layer while shown over it and
+      back to top once hidden. No surface is added over the game (an overlay strip would stop direct scanout). In
+      fullscreen the dock always auto-hides (even with auto-hide off) and never peeks. Verified (`t-fullscreen.sh`):
+      hidden with the pointer away; up over the window after resting on the bottom row; hides again; same with
+      auto-hide off; back up when fullscreen ends. ⚠ Games that confine the pointer and scroll at the screen edge
+      (RTS) will bring the dock up when scrolling down; not seen on the real session yet.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 
