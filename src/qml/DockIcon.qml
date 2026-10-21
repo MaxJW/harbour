@@ -25,6 +25,11 @@ DockSlot {
                                              || LauncherEntries.urgent(launcherUrl, LauncherEntries.revision)
     onDemandsAttentionChanged: demandsAttention ? dock.startBounce(appKey, "attention") : dock.stopBounce(appKey)
 
+    // A pinned app that isn't installed (a default this system lacks, or one mid-
+    // reinstall) stays in the settings, so it comes back, but isn't shown.
+    readonly property bool missing: model.IsLauncher === true && !DockTools.isApplication(launcherUrl)
+    visible: !missing
+
     // Being unpinned from its menu: shrinks away rather than vanishing (see Dock).
     property bool leaving: false
 

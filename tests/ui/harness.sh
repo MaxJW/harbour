@@ -44,7 +44,11 @@ export XDG_CONFIG_HOME=$CI/config
 mkdir -p "$CI/data/applications" "$CI/cache"
 printf '[Desktop Entry]\nType=Application\nName=UI test grabber\nExec=%s\nNoDisplay=true\nX-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n' \
     "$(readlink -f "$(command -v python3)")" > "$CI/data/applications/harbour-ui-grab.desktop"
-export XDG_DATA_DIRS=$CI/data:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+# Its own data home too, so drops on the Trash land in a Trash of its own; the
+# user's apps and icons still come from ~/.local/share, read-only.
+mkdir -p "$CI/data-home"
+export XDG_DATA_DIRS=$CI/data:${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+export XDG_DATA_HOME=$CI/data-home
 export XDG_CACHE_HOME=$CI/cache
 
 SOCKET=wl-harbour-ci-$$

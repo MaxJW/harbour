@@ -6,14 +6,15 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
-// The Dock page, in the order of macOS's Desktop & Dock settings.
+// The Dock page: how it looks, how it behaves, what it holds; timing folded away.
 KCM.SimpleKCM {
     id: root
 
     readonly property var settings: kcm.settings
 
     Kirigami.FormLayout {
-        // ── Size and look ─────────────────────────────────────────────────────
+        // ── Look ──────────────────────────────────────────────────────────────
+
         RowLayout {
             Kirigami.FormData.label: i18nc("@label:slider", "Size:")
             spacing: Kirigami.Units.smallSpacing
@@ -22,12 +23,12 @@ KCM.SimpleKCM {
             QQC2.Slider {
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 from: 32
-                to: 96
-                stepSize: 2
+                to: 128
+                // Rounded here rather than with stepSize, which draws a crowd of ticks.
                 value: root.settings.iconSize
                 onMoved: {
-                    root.settings.iconSize = value;
-                    kcm.preview("iconSize", value);
+                    root.settings.iconSize = Math.round(value / 2) * 2;
+                    kcm.preview("iconSize", root.settings.iconSize);
                 }
 
                 KCM.SettingStateBinding {
@@ -43,19 +44,10 @@ KCM.SimpleKCM {
             }
         }
 
-        QQC2.CheckBox {
-            text: i18nc("@option:check", "Same physical size on every screen")
-            checked: root.settings.matchPhysicalSize
-            onToggled: root.settings.matchPhysicalSize = checked
-
-            QQC2.ToolTip.text: i18nc("@info:tooltip", "Screens with fewer pixels per inch get a proportionally smaller dock, so it looks the same size as on the main screen. The sizes shown here are for the main screen.")
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-
-            KCM.SettingStateBinding {
-                configObject: root.settings
-                settingName: "matchPhysicalSize"
-            }
+        QQC2.Label {
+            text: i18nc("@info", "You can also drag the divider in the Dock up or down.")
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
         }
 
         RowLayout {
@@ -81,11 +73,11 @@ KCM.SimpleKCM {
                 enabled: magnification.checked
                 from: Math.max(48, root.settings.iconSize + 8)
                 to: 192
-                stepSize: 4
+                // Rounded here rather than with stepSize, which draws a crowd of ticks.
                 value: root.settings.magnifiedIconSize
                 onMoved: {
-                    root.settings.magnifiedIconSize = value;
-                    kcm.preview("magnifiedIconSize", value);
+                    root.settings.magnifiedIconSize = Math.round(value / 4) * 4;
+                    kcm.preview("magnifiedIconSize", root.settings.magnifiedIconSize);
                 }
 
                 KCM.SettingStateBinding {
@@ -110,11 +102,11 @@ KCM.SimpleKCM {
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 from: 0
                 to: 100
-                stepSize: 5
+                // Rounded here rather than with stepSize, which draws a crowd of ticks.
                 value: root.settings.glassOpacity
                 onMoved: {
-                    root.settings.glassOpacity = value;
-                    kcm.preview("glassOpacity", value);
+                    root.settings.glassOpacity = Math.round(value / 5) * 5;
+                    kcm.preview("glassOpacity", root.settings.glassOpacity);
                 }
 
                 KCM.SettingStateBinding {
@@ -125,11 +117,81 @@ KCM.SimpleKCM {
             QQC2.Label { text: i18nc("@item:inrange glass appearance", "Tinted") }
         }
 
-        Item {
-            Kirigami.FormData.isSection: true
+        RowLayout {
+            spacing: 0
+
+            QQC2.CheckBox {
+                text: i18nc("@option:check", "Same physical size on every screen")
+                checked: root.settings.matchPhysicalSize
+                onToggled: root.settings.matchPhysicalSize = checked
+
+
+                KCM.SettingStateBinding {
+                    configObject: root.settings
+                    settingName: "matchPhysicalSize"
+                }
+            }
+            Kirigami.ContextualHelpButton {
+                toolTipText: i18nc("@info:tooltip", "Screens with fewer pixels per inch get a proportionally smaller dock, so it looks the same size as on the main screen. The sizes above are for the main screen.")
+            }
         }
 
         // ── Behaviour ─────────────────────────────────────────────────────────
+
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18nc("@title:group", "Behaviour")
+        }
+
+        RowLayout {
+            Kirigami.FormData.label: i18nc("@title:group", "Hiding:")
+            spacing: 0
+
+            QQC2.CheckBox {
+                text: i18nc("@option:check", "Automatically hide and show the Dock")
+                checked: root.settings.autoHide
+                onToggled: root.settings.autoHide = checked
+
+                KCM.SettingStateBinding {
+                    configObject: root.settings
+                    settingName: "autoHide"
+                }
+            }
+            Kirigami.ContextualHelpButton {
+                toolTipText: i18nc("@info:tooltip", "Meta+Alt+D turns this on and off from anywhere.")
+            }
+        }
+
+        QQC2.CheckBox {
+            text: i18nc("@option:check", "Keep it shown while no window is in the way")
+            enabled: root.settings.autoHide
+            checked: root.settings.showWhenClear
+            onToggled: root.settings.showWhenClear = checked
+
+            KCM.SettingStateBinding {
+                configObject: root.settings
+                settingName: "showWhenClear"
+                extraEnabledConditions: root.settings.autoHide
+            }
+        }
+
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18nc("@label:listbox", "Show the Dock on:")
+            textRole: "text"
+            valueRole: "value"
+            model: [
+                { text: i18nc("@item:inlistbox", "The screen you move the pointer to"), value: "follow" },
+                { text: i18nc("@item:inlistbox", "The main screen only"), value: "primary" },
+            ]
+            currentIndex: Math.max(0, model.findIndex(entry => entry.value === root.settings.screenMode))
+            onActivated: root.settings.screenMode = currentValue
+
+            KCM.SettingStateBinding {
+                configObject: root.settings
+                settingName: "screenMode"
+            }
+        }
+
         QQC2.ComboBox {
             Kirigami.FormData.label: i18nc("@label:listbox", "Minimise windows using:")
             enabled: kcm.genieInstalled
@@ -154,34 +216,15 @@ KCM.SimpleKCM {
         }
 
         QQC2.CheckBox {
-            Kirigami.FormData.label: i18nc("@title:group", "Dock:")
-            text: i18nc("@option:check", "Automatically hide and show the Dock")
-            checked: root.settings.autoHide
-            onToggled: root.settings.autoHide = checked
+            Kirigami.FormData.label: i18nc("@title:group", "Icons:")
+            text: i18nc("@option:check", "Show indicators for open applications")
+            checked: root.settings.showIndicators
+            onToggled: root.settings.showIndicators = checked
 
             KCM.SettingStateBinding {
                 configObject: root.settings
-                settingName: "autoHide"
+                settingName: "showIndicators"
             }
-        }
-
-        QQC2.CheckBox {
-            text: i18nc("@option:check", "Keep it shown while no window is in the way")
-            enabled: root.settings.autoHide
-            checked: root.settings.showWhenClear
-            onToggled: root.settings.showWhenClear = checked
-
-            KCM.SettingStateBinding {
-                configObject: root.settings
-                settingName: "showWhenClear"
-                extraEnabledConditions: root.settings.autoHide
-            }
-        }
-
-        QQC2.Label {
-            text: i18nc("@info", "Meta+Alt+D turns this on and off.")
-            font: Kirigami.Theme.smallFont
-            opacity: 0.7
         }
 
         QQC2.CheckBox {
@@ -196,28 +239,7 @@ KCM.SimpleKCM {
         }
 
         QQC2.CheckBox {
-            text: i18nc("@option:check", "Show indicators for open applications")
-            checked: root.settings.showIndicators
-            onToggled: root.settings.showIndicators = checked
-
-            KCM.SettingStateBinding {
-                configObject: root.settings
-                settingName: "showIndicators"
-            }
-        }
-
-        QQC2.CheckBox {
-            text: i18nc("@option:check", "Show the Trash")
-            checked: root.settings.showTrash
-            onToggled: root.settings.showTrash = checked
-
-            KCM.SettingStateBinding {
-                configObject: root.settings
-                settingName: "showTrash"
-            }
-        }
-
-        QQC2.CheckBox {
+            Kirigami.FormData.label: i18nc("@title:group", "Clicking:")
             text: i18nc("@option:check", "Clicking the active app's icon minimises its windows")
             checked: root.settings.clickToMinimize
             onToggled: root.settings.clickToMinimize = checked
@@ -228,33 +250,18 @@ KCM.SimpleKCM {
             }
         }
 
-        QQC2.ComboBox {
-            Kirigami.FormData.label: i18nc("@label:listbox", "Show the Dock on:")
-            textRole: "text"
-            valueRole: "value"
-            model: [
-                { text: i18nc("@item:inlistbox", "The screen you move the pointer to"), value: "follow" },
-                { text: i18nc("@item:inlistbox", "The main screen only"), value: "primary" },
-            ]
-            currentIndex: Math.max(0, model.findIndex(entry => entry.value === root.settings.screenMode))
-            onActivated: root.settings.screenMode = currentValue
-
-            KCM.SettingStateBinding {
-                configObject: root.settings
-                settingName: "screenMode"
-            }
-        }
+        // ── Items ─────────────────────────────────────────────────────────────
 
         Item {
             Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18nc("@title:group", "Folders")
+            Kirigami.FormData.label: i18nc("@title:group", "Folders and Trash")
         }
 
-        // Folders kept after the separator as stacks, in dock order. Each one's view
-        // sits beside it in stackViews.
         ColumnLayout {
             id: folders
 
+            Kirigami.FormData.label: i18nc("@label", "Folders:")
+            Kirigami.FormData.labelAlignment: Qt.AlignTop
             Layout.preferredWidth: Kirigami.Units.gridUnit * 24
             spacing: Kirigami.Units.smallSpacing
 
@@ -391,12 +398,36 @@ KCM.SimpleKCM {
             }
         }
 
+        QQC2.CheckBox {
+            Kirigami.FormData.label: i18nc("@label", "Trash:")
+            text: i18nc("@option:check", "Show the Trash")
+            checked: root.settings.showTrash
+            onToggled: root.settings.showTrash = checked
+
+            KCM.SettingStateBinding {
+                configObject: root.settings
+                settingName: "showTrash"
+            }
+        }
+
+        // ── Advanced: timing, folded away ─────────────────────────────────────
+
         Item {
             Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18nc("@title:group", "Timing")
+            Kirigami.FormData.label: ""
+        }
+
+        QQC2.Button {
+            id: advanced
+
+            Kirigami.FormData.label: i18nc("@label", "Advanced:")
+            text: checked ? i18nc("@action:button", "Hide Timing Options") : i18nc("@action:button", "Show Timing Options")
+            icon.name: checked ? "arrow-up" : "arrow-down"
+            checkable: true
         }
 
         QQC2.SpinBox {
+            visible: advanced.checked
             Kirigami.FormData.label: i18nc("@label:spinbox", "Delay before showing:")
             from: 0
             to: 2000
@@ -413,6 +444,7 @@ KCM.SimpleKCM {
         }
 
         QQC2.SpinBox {
+            visible: advanced.checked
             Kirigami.FormData.label: i18nc("@label:spinbox", "Delay before hiding:")
             from: 0
             to: 5000
@@ -429,6 +461,7 @@ KCM.SimpleKCM {
         }
 
         QQC2.SpinBox {
+            visible: advanced.checked
             Kirigami.FormData.label: i18nc("@label:spinbox", "Show animation:")
             from: 0
             to: 2000
@@ -445,6 +478,7 @@ KCM.SimpleKCM {
         }
 
         QQC2.SpinBox {
+            visible: advanced.checked
             Kirigami.FormData.label: i18nc("@label:spinbox", "Hide animation:")
             from: 0
             to: 2000

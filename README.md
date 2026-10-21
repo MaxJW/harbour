@@ -17,7 +17,8 @@ Harbour is a standalone dock written in C++20 and Qt Quick. It talks to KWin dir
 ## Features
 
 - **Auto-hide that stays out of the way.** The dock slides away and comes back when you push against the bottom edge. It uses a real KWin screen edge, so it never reveals over fullscreen games or video. As an option, it stays up whenever no window is underneath it.
-- **Magnification** that follows the pointer smoothly. Icons at rest are drawn pixel-exact, so they stay sharp.
+- **Magnification** that follows the pointer smoothly, and the files you drag over the dock. Icons at rest are drawn pixel-exact, so they stay sharp.
+- **Drag the divider** up or down to resize the dock, like on a Mac.
 - **Bounces** when an app launches and when an app asks for attention. While the dock is hidden, an app that wants you peeks up out of the screen edge (never over a fullscreen game).
 - **Animated everywhere else too.** Apps that quit shrink away as their neighbours close the gap. A dropped icon glides into its slot. The name label slides between icons. Size changes animate. Stacks gather back in when they close.
 - **Genie minimise.** An optional KWin effect (Genie, Scale or Suck) that pours windows into their own dock icon.
@@ -83,6 +84,7 @@ Pass `-DHARBOUR_BUILD_KWIN_EFFECT=OFF` to skip the Genie effect.
 
 - Remove or hide any Plasma panel that holds a task manager, so you don't have two docks.
 - To turn on Genie, pick it under **System Settings → Workspace → Dock → Minimise animation**. It replaces Magic Lamp.
+- Out of the box it pins Dolphin, Firefox, Konsole, Discover and System Settings (whichever are installed) plus your Downloads folder.
 - To pin an app, right-click it while it's running and choose **Pin to Dock**.
 - To pin a folder, drag it from Dolphin and drop it between the dock's icons.
 
@@ -92,11 +94,10 @@ Everything lives in **System Settings → Workspace → Dock**, and it's all sto
 
 | | |
 |---|---|
-| **Appearance** | Icon size, magnification and its size, glass opacity |
-| **Behaviour** | Auto-hide, staying shown when no window is in the way, bouncing on launch, indicators, the Trash, click-to-minimise, which screen to use |
-| **Folders** | Add, reorder and remove the folders kept as stacks, and pick each one's view: fan, grid or list |
-| **Minimise** | Genie, Scale, Suck or KDE's own effects |
-| **Timing** | Reveal/hide delays and slide durations |
+| **Look** | Icon size, magnification, glass, the same physical size on every screen |
+| **Behaviour** | Auto-hide, which screen to use, the minimise effect (Genie, Scale, Suck or KDE's own), indicators, bouncing on launch, click-to-minimise |
+| **Folders and Trash** | Add, reorder and remove the folders kept as stacks and pick each one's view (fan, grid or list); show or hide the Trash |
+| **Advanced** | Reveal/hide delays and slide durations |
 
 ## How it works
 

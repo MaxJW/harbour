@@ -25,14 +25,23 @@ Item {
     readonly property real targetIconSize: Math.round(HarbourSettings.iconSize * dockWindow.sizeScale)
     property real iconSize: targetIconSize
     Behavior on iconSize {
-        enabled: root.populated
+        // Follows the divider directly while it's being dragged.
+        enabled: root.populated && !root.resizingByHand
         NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
     }
+    // The divider is being dragged up or down to resize the dock (DockSeparator).
+    property bool resizingByHand: false
     readonly property bool resizing: iconSize !== targetIconSize
     // The largest size since the resize began, so the window doesn't resize every frame.
     property real heldIconSize: targetIconSize
     onTargetIconSizeChanged: heldIconSize = Math.max(iconSize, targetIconSize)
-    readonly property real windowIconSize: resizing ? Math.max(heldIconSize, targetIconSize) : targetIconSize
+    // While the divider is hovered or dragged, the window is as tall as the largest size
+    // a drag can reach: resizing the window mid-drag would shift the pointer positions
+    // KWin reports (they lag the new size), and the drag would feed on itself.
+    property bool resizeReady: false
+    readonly property real windowIconSize: resizeReady ? Math.max(targetIconSize, Math.round(maxIconSize * dockWindow.sizeScale))
+                                         : resizing ? Math.max(heldIconSize, targetIconSize) : targetIconSize
+    readonly property int maxIconSize: 128
 
     function paddingFor(size: real): real {
         return Math.round(size * 0.14);
@@ -59,9 +68,11 @@ Item {
     // Only over the dock itself. The input region includes a strip along the whole
     // screen edge, and a pointer beyond the dock's ends must not magnify anything:
     // the falloff would shift every icon by the same amount and slide the dock sideways.
-    readonly property bool pointerOverDock: hoverHandler.hovered
+    // Hovering, or dragging files over it (hover events stop during drag and drop).
+    readonly property bool pointerInside: hoverHandler.hovered || dropArea.containsDrag
+    readonly property bool pointerOverDock: pointerInside
                                             && pointerX >= tasksRow.x - gap && pointerX <= tasksRow.x + tasksRow.width + gap
-    readonly property bool magnifying: pointerOverDock && dragIcon === null && !menuOpen
+    readonly property bool magnifying: pointerOverDock && dragIcon === null && !menuOpen && !resizingByHand
                                        && autoHide.state !== AutoHideController.Hiding
     property real magnifyAmount: magnifying ? 1 : 0
     Behavior on magnifyAmount {
@@ -86,7 +97,7 @@ Item {
     // Far enough down that nothing, shadow included, is left inside the window.
     readonly property real hiddenOffset: dockHeight + bottomGap + 32
 
-    readonly property DockSlot hoveredIcon: hoverHandler.hovered ? iconAtShownX(pointerX) : null
+    readonly property DockSlot hoveredIcon: pointerInside ? iconAtShownX(pointerX) : null
     property DockIcon dragIcon: null
     property point dragPoint // in tasksRow coordinates
     readonly property bool dragRemoving: dragIcon !== null && canRemove(dragIcon) && dragPoint.y < -iconSize
@@ -586,7 +597,7 @@ Item {
         let target = 0;
         for (let i = 0; i < taskRepeater.count; ++i) {
             const item = taskRepeater.itemAt(i);
-            if (item && item !== dragIcon && item.x + item.width / 2 < point.x) {
+            if (item && item.visible && item !== dragIcon && item.x + item.width / 2 < point.x) {
                 ++target;
             }
         }
@@ -835,20 +846,27 @@ Item {
 
             property DockSlot target: null
 
+            // Up to the tops of magnified icons, so dragging over them doesn't leave.
             x: background.x
-            y: background.y
+            y: Math.min(background.y, root.inputTop)
             width: background.width
-            height: background.height + root.bottomGap
+            height: root.height - y
 
             function iconAt(dropX: real): DockSlot {
                 return root.iconAtShownX(mapToItem(slide, dropX, 0).x);
             }
 
+            // Magnifies under the dragged files like under the pointer.
+            function follow(dragX: real) {
+                root.pointerX = mapToItem(slide, dragX, 0).x;
+                target = iconAt(dragX);
+            }
+
             onEntered: drag => {
                 drag.accepted = drag.hasUrls;
-                target = iconAt(drag.x);
+                follow(drag.x);
             }
-            onPositionChanged: drag => target = iconAt(drag.x)
+            onPositionChanged: drag => follow(drag.x)
             onExited: target = null
             onDropped: drop => {
                 const urls = drop.urls;

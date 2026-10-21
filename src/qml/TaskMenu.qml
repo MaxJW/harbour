@@ -11,8 +11,9 @@ DockMenu {
     required property DockIcon dockIcon
     required property TaskManager.TasksModel tasksModel
 
-    readonly property bool running: dockIcon.running
-    readonly property url launcherUrl: dockIcon.model.LauncherUrlWithoutIcon
+    // The icon can go before the menu does (it's destroyed a moment after closing).
+    readonly property bool running: dockIcon?.running ?? false
+    readonly property url launcherUrl: dockIcon?.model.LauncherUrlWithoutIcon ?? ""
 
     function build() {
         const windows = dock.windowIndexes(dockIcon);

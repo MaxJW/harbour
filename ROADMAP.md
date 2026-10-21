@@ -247,6 +247,13 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - [x] Fan labels looked pixelated when tilted (user screenshot, NVIDIA). Not reproducible in the harness (smooth
       there either way). Fan text now uses `Text.CurveRendering` (glyph outlines, no cached bitmaps/distance fields)
       and tilted icons `antialiasing: true`. ⚠ Needs the user's eyes on the real session.
+- [x] Round 9 (2026-10-21): magnify under files dragged over the dock (DropArea feeds `pointerX`; reaches up to
+      magnified icon tops); drag the divider to resize (window held at the largest size while the divider is hovered
+      or dragged: resizing it mid-drag made KWin's lagging pointer positions feed back and run away to the maximum);
+      generic default launchers (Dolphin, Firefox, Konsole, Discover, System Settings), with pinned apps that aren't
+      installed hidden but kept in the settings; settings page regrouped (Look / Behaviour / Folders and Trash /
+      Advanced timing folded away, shortcut and density notes as help buttons, no slider tick crowds). Harness gets its
+      own XDG_DATA_HOME so Trash drops never reach the user's Trash. Tests: t-dragtrash, t-resize. Tagged v0.1.0.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

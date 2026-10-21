@@ -8,7 +8,8 @@
   <group name="Items">
     <entry name="launchers" key="Launchers" type="StringList">
       <label>Apps kept in the dock, in order</label>
-      <default>applications:org.kde.dolphin.desktop,applications:com.mitchellh.ghostty.desktop,applications:helium.desktop,applications:equibop.desktop,applications:steam.desktop,applications:spotify-launcher.desktop,applications:obsidian.desktop,applications:dev.zed.Zed.desktop,applications:systemsettings.desktop</default>
+      <!-- Apps that aren't installed are skipped when shown. -->
+      <default>applications:org.kde.dolphin.desktop,applications:firefox.desktop,applications:org.kde.konsole.desktop,applications:org.kde.discover.desktop,applications:systemsettings.desktop</default>
     </entry>
     <entry name="stacks" key="Stacks" type="StringList">
       <label>Folders shown as stacks after the separator</label>
