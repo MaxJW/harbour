@@ -359,6 +359,13 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       script); no debug output or TODOs left. The duplicated "load a KWin script, then run it" code is one helper
       (`runScript`, `writeScript` in dockmanager.cpp); an unused include dropped. Tagged **v0.1.1** (0.1.1 in
       CMake and the PKGBUILD).
+- [x] AUR: `packaging/aur/harbour-git/` (PKGBUILD + .SRCINFO) builds the latest commit from GitHub; to publish,
+      copy both into the AUR repo (ssh://aur@aur.archlinux.org/harbour-git.git) and push (needs the user's AUR
+      account). Test-built with makepkg from GitHub in an empty directory: same 8 files as the local package.
+      ⚠ Not built in a clean chroot and not checked with namcap (devtools/namcap not installed). Dependencies
+      audited from the binaries' NEEDED entries and the QML imports: qqc2-desktop-style dropped (the dock no
+      longer uses Controls; the settings page gets its style from System Settings), wayland added (linked
+      directly). The rebuild hook's message now covers AUR installs too.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

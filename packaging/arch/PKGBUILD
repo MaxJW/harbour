@@ -8,8 +8,10 @@ pkgdesc='A dock for KDE Plasma'
 arch=('x86_64')
 license=('GPL-3.0-or-later')
 # The KWin effect is built against the exact KWin version: rebuild this package after KWin updates.
-depends=('qt6-base' 'qt6-declarative' 'layer-shell-qt' 'kwin' 'plasma-workspace' 'kconfig' 'kcoreaddons'
-         'kglobalaccel' 'kio' 'kservice' 'kcmutils' 'kirigami' 'qqc2-desktop-style')
+# Linked: Qt, wayland, layer-shell-qt, the KF6 libraries, kwin (the effect), kcmutils (settings page).
+# At run time: plasma-workspace's task list QML module, kirigami for the settings page.
+depends=('qt6-base' 'qt6-declarative' 'wayland' 'layer-shell-qt' 'kwin' 'plasma-workspace' 'kconfig'
+         'kcoreaddons' 'kglobalaccel' 'kio' 'kservice' 'kcmutils' 'kirigami')
 makedepends=('cmake' 'extra-cmake-modules' 'ninja' 'plasma-wayland-protocols' 'vulkan-headers')
 source=()
 
