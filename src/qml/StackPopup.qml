@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Templates as T
 import Harbour
 
@@ -43,9 +42,9 @@ T.Menu {
     // 0 → 1 as the fan opens, and back as it closes.
     property real opening: 0
 
-    popupType: QQC2.Popup.Window
+    popupType: T.Popup.Window
     padding: 0
-    closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+    closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
     width: contentWidth_
     height: contentHeight_
     background: Item {}
@@ -263,13 +262,49 @@ T.Menu {
                 }
             }
 
-            QQC2.Button {
+            // Drawn here rather than a Controls button: that alone loaded the whole desktop
+            // style and Kirigami into the dock (several MB) the first time a stack opened.
+            Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 10
-                text: qsTr("Open in Dolphin")
-                icon.name: "system-file-manager"
-                onClicked: stackPopup.openItem(stackPopup.stack.folderUrl)
+                width: openRow.implicitWidth + 24
+                height: 30
+                radius: height / 2
+                color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, openMouse.containsMouse ? 0.16 : 0.09)
+                                            : Qt.rgba(0, 0, 0, openMouse.containsMouse ? 0.12 : 0.06)
+                border.width: 1
+                border.color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+
+                Row {
+                    id: openRow
+
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Image {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16
+                        height: 16
+                        sourceSize.width: 16
+                        sourceSize.height: 16
+                        source: DockTools.iconUrl("system-file-manager")
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Open in Dolphin")
+                        color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85)
+                        font.pixelSize: 12
+                    }
+                }
+
+                MouseArea {
+                    id: openMouse
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: stackPopup.openItem(stackPopup.stack.folderUrl)
+                }
             }
         }
     }

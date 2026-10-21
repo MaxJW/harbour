@@ -10,7 +10,6 @@
 #include <QAction>
 #include <QApplication>
 #include <QQmlEngine>
-#include <QQuickStyle>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QTimer>
@@ -56,10 +55,6 @@ int main(int argc, char *argv[])
     if (!QGuiApplication::platformName().startsWith(u"wayland"_s)) {
         qCritical("Harbour needs a Wayland session (platform is %s)", qPrintable(QGuiApplication::platformName()));
         return 1;
-    }
-
-    if (QQuickStyle::name().isEmpty()) {
-        QQuickStyle::setStyle(u"org.kde.desktop"_s);
     }
 
     HarbourSettings *settings = HarbourSettings::self();

@@ -69,7 +69,6 @@ target_link_libraries(harbour PRIVATE
     Qt6::Gui
     Qt6::GuiPrivate
     Qt6::Quick
-    Qt6::QuickControls2
     Qt6::WaylandClient
     Qt6::Widgets
     KF6::ConfigCore

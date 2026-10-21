@@ -336,6 +336,25 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       and "icon + bounce", but a just-launched app is usually under the pointer: magnified *and* bouncing, with its
       label above. Window height now magnified size + bounce + label space. Verified with a slow-starting test app:
       label clipped at the bounce peak on the old height, whole on the new.
+- [x] Name label swung right and back when launching a pinned app (user). Logged in the harness (System Settings
+      launch): the model makes a new delegate for the starting app while the launcher's still there; the label
+      retargeted to it before the Row had laid it out (shownLeft 582 instead of 1102), so its slide started from the
+      wrong place and it jumped to x=1344 before sliding back to 1084. Now a new delegate for the same app (same
+      label) is adopted without a slide. And when the old delegate goes before the new one is hovered (~13 ms when
+      the starting app gets its window) the label keeps its last position and text instead of vanishing for a frame.
+      Verified by logging the label's x: 824 → 1084 within one update (only 1084 drawn), visible throughout.
+- [x] Right-click, then right-click again without moving: magnification lost (user). Same root as the fan: the
+      menu's dismissal leaves Qt Quick believing the pointer is gone. When KWin's answer (cursorAt) puts the pointer
+      over the dock, DockWindow now also sends Qt Quick the enter and move Wayland didn't, so hover, magnification
+      and the label come back. Verified (scratch test): still magnified with its label after the second right-click;
+      follows the pointer to Zed; at rest once it leaves.
+- [x] Memory: the stack grid's "Open in Dolphin" was the dock's only Qt Quick Controls item, and loading it pulled in
+      the org.kde.desktop style and Kirigami the first time a stack opened (+4 MB). Now drawn as a plain pill; the
+      Controls import, `QQuickStyle` and the QuickControls2 link are gone. Harness, two screens: 40 → 35 MB after
+      use (start unchanged, ~30 MB). Looked at and not worth it: malloc_trim (< 0.5 MB), a smaller QPixmapCache
+      (no change), per-dock window lists (the second dock costs ~1.4 MB in all). Allocator stats: ~14 MB of heap in
+      use at start, 18.7 MB after use; the rest of the ~30 MB is Qt/KF6 libraries' own data. The remaining large
+      piece is the QApplication/QStyle stack that native menus need.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

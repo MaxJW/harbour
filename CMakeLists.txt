@@ -13,7 +13,7 @@ include(KDEInstallDirs)
 include(KDECMakeSettings)
 include(FeatureSummary)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui GuiPrivate Quick QuickControls2 WaylandClient Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui GuiPrivate Quick WaylandClient Widgets)
 find_package(KF6 6.0 REQUIRED COMPONENTS Config GlobalAccel KIO Service)
 find_package(LayerShellQt 6.0 REQUIRED)
 find_package(PlasmaWaylandProtocols 1.10 REQUIRED)
