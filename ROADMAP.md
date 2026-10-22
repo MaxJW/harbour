@@ -400,7 +400,14 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       the existing harbour-0.1.2-1 package and installed that (built 11:07, before this change), so the old label
       (window title, then the group's raw app id) was running. A watcher on the real session confirmed the group
       parent keeps AppId `steam_app_3964911085`, so no change to the lookup was needed (a speculative hardening
-      commit was reverted). ⚠ Not yet seen on the real session with the new package.
+      commit was reverted). Seen working on the real session (user: "now it says Battle.net").
+- [x] Launcher + game under one Steam id named after the game (user's pick of the options offered, 2026-10-22):
+      when a Steam-named icon has several windows, the newest one's title labels it (children of a group are in
+      the order the windows appeared, checked in the harness). Battle.net alone → "Battle.net"; press Play →
+      "Hearthstone"; game closed → "Battle.net". Trade-off accepted: a newer launcher window (e.g. "Battle.net
+      Login") takes over while it's open. Verified in the harness with XWayland stand-ins (hover-label
+      screenshots at each step); t-hover passes. ⚠ If the launcher closes when the game starts, the lone game
+      window shows the Steam name ("Battle.net"): with one window the Steam name wins. Icon unchanged.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

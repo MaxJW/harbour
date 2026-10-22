@@ -42,7 +42,15 @@ DockSlot {
     property point pressPoint
 
     iconSource: DockTools.iconUrl(model.decoration, HarbourSettings.evenTiles)
-    label: DockTools.steamAppName(model.AppId ?? "") || model.AppName || model.display || ""
+    label: {
+        const steamName = DockTools.steamAppName(model.AppId ?? "");
+        if (steamName && childCount > 1) {
+            // A launcher and the game it starts share Steam's app id (Battle.net and
+            // Hearthstone): the newest window, the game once it's up, names the icon.
+            return dock.role(dock.modelIndex(icon, childCount - 1), Qt.DisplayRole) || steamName;
+        }
+        return steamName || model.AppName || model.display || "";
+    }
     running: model.IsWindow === true || model.IsGroupParent === true
     bounceOffset: dock.bounceOffset(appKey, dock.now)
     iconOpacity: (dragged && dock.dragRemoving) ? 0.5 : dropTarget ? 0.65 : 1
