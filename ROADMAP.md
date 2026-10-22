@@ -420,6 +420,21 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       icon: the game a launcher starts is always the newer process, and a later launcher window ("Battle.net
       Login", same process) no longer takes over. AppPid checked on the real session (Hearthstone.exe 14:49,
       Battle.net 14:43). Seen working on the real session (user: "It worked!"), build swapped in for the dock.
+- [x] Sharp icons for Wine programs (user: Hearthstone's icon "a bit low quality"; picked "automatic from the
+      .exe" over a hand-installed theme icon). Hearthstone's window offers only a 32 px icon; its .exe holds
+      256 px. `DockTools::wineIcon`: when a window's icon is under 128 px and its process is Wine (process named
+      after a Windows path, "C:\…\Game.exe"), the .exe is found in /proc/<pid>/maps (through /proc/<pid>/root if
+      only the container has it) and read by KDE's `windowsexethumbnail` in the thumbnail worker at 256 px,
+      cached by path; used if larger than the window's icon, else the window's own stays. `wineIconRevision`
+      re-runs bindings once read. The icon follows the same window as the label (`shownWindow`: the newest
+      process's for a Steam launcher + game), and re-reads on child icon changes as well as titles.
+      Verified in the harness with a fake Wine process (argv[0] a Windows path, the real Hearthstone.exe
+      mmapped, X11 window with a 32 px icon): Hearthstone's 256 px icon, sharp magnified; a non-Wine window with
+      a 32 px icon keeps it; launcher+game group: Battle.net icon → Hearthstone icon and name → back. t-hover
+      passes; t-menuhold/t-switch screenshots match the previous commit (t-switch's second click lands on
+      Discord under magnification, before and after). ⚠ Not yet seen on the real session.
+- HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
+  shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

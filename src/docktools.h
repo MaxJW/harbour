@@ -1,8 +1,11 @@
 #pragma once
 
+#include <QHash>
+#include <QIcon>
 #include <QObject>
 #include <QQuickImageProvider>
 #include <QQuickItem>
+#include <QSet>
 #include <QUrl>
 #include <QVariant>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -44,11 +47,14 @@ class DockTools : public QObject
     QML_SINGLETON
     /// Whether the harbour.geometry log (item positions, for scripted tests) is on.
     Q_PROPERTY(bool logGeometry READ logGeometry CONSTANT)
+    /// Goes up each time a program's icon has been read for wineIcon().
+    Q_PROPERTY(int wineIconRevision READ wineIconRevision NOTIFY wineIconsChanged)
 
 public:
     using QObject::QObject;
 
     bool logGeometry() const;
+    int wineIconRevision() const { return m_wineIconRevision; }
 
     /// URL for an icon given as a QIcon (e.g. a TasksModel decoration) or an icon name.
     /// evenTile: draw it at the dock's common tile size and corners if it's a rounded square.
@@ -85,6 +91,11 @@ public:
     Q_INVOKABLE QString steamAppName(const QString &appId) const;
     /// When a process started (clock ticks since boot, from /proc), or -1 if unknown.
     Q_INVOKABLE qint64 processStartTime(qint64 pid) const;
+    /// A window's icon, or for a program running under Wine its .exe's icon when that's
+    /// sharper: games often give their window a 32 px icon and keep a 256 px one in the
+    /// .exe. The .exe is read in KDE's thumbnail worker; until then (and if it has no
+    /// larger icon) this is the window's own. Pass wineIconRevision so the binding asks again.
+    Q_INVOKABLE QVariant wineIcon(qint64 pid, const QVariant &windowIcon, int revision);
 
     /// Theme icon name for a file or folder, by MIME type (folders get their special icons).
     Q_INVOKABLE QString iconNameForUrl(const QUrl &url) const;
@@ -102,4 +113,12 @@ public:
     /// The reverse, for pinning a stack: a local folder's path, as "~/…" inside the home
     /// directory, or "" if the URL isn't a local folder.
     Q_INVOKABLE QString stackPath(const QUrl &url) const;
+
+Q_SIGNALS:
+    void wineIconsChanged();
+
+private:
+    QHash<QString, QIcon> m_exeIcons; // by .exe path; a null icon when it has none
+    QSet<QString> m_exeIconsPending;
+    int m_wineIconRevision = 0;
 };

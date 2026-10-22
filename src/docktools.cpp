@@ -605,3 +605,99 @@ qint64 DockTools::processStartTime(qint64 pid) const
     const qint64 start = fields.value(19).toLongLong(&ok);
     return ok ? start : -1;
 }
+
+namespace
+{
+// A window's icon at least this large (px) is used as it is.
+constexpr int SharpIconSize = 128;
+// The size a program's icon is read at.
+constexpr int ExeIconSize = 256;
+
+int largestSize(const QIcon &icon)
+{
+    int largest = 0;
+    for (const QSize &size : icon.availableSizes()) {
+        largest = qMax(largest, qMax(size.width(), size.height()));
+    }
+    return largest;
+}
+
+// The .exe a Wine process runs, or "" if it isn't one. Wine names the process after the
+// Windows path ("C:\Games\Game.exe"), and the .exe is mapped into it, so its Linux path
+// is in /proc/<pid>/maps. Seen through /proc/<pid>/root if the process is in a container
+// (Steam's runtime) that has it somewhere the host doesn't.
+QString wineExecutable(qint64 pid)
+{
+    QFile cmdline(u"/proc/%1/cmdline"_s.arg(pid));
+    if (pid <= 0 || !cmdline.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    const QString program = QString::fromLocal8Bit(cmdline.readAll().split('\0').value(0));
+    static const QRegularExpression windowsExe(u"^[a-z]:\\\\.*\\.exe$"_s, QRegularExpression::CaseInsensitiveOption);
+    if (!windowsExe.match(program).hasMatch()) {
+        return {};
+    }
+    const QString name = u'/' + program.mid(program.lastIndexOf(u'\\') + 1);
+
+    QFile maps(u"/proc/%1/maps"_s.arg(pid));
+    if (!maps.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    // "address perms offset dev inode path", where the path can hold spaces. (Read whole:
+    // /proc files have no size, so QFile is at their end before reading anything.)
+    static const QRegularExpression mappedFile(u"^\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+(/.*)$"_s);
+    const QList<QByteArray> lines = maps.readAll().split('\n');
+    for (const QByteArray &bytes : lines) {
+        const QString line = QString::fromLocal8Bit(bytes).trimmed();
+        if (!line.endsWith(name, Qt::CaseInsensitive)) {
+            continue;
+        }
+        const QString path = mappedFile.match(line).captured(1);
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (QFileInfo::exists(path)) {
+            return path;
+        }
+        const QString inContainer = u"/proc/%1/root"_s.arg(pid) + path;
+        return QFileInfo::exists(inContainer) ? inContainer : QString();
+    }
+    return {};
+}
+}
+
+QVariant DockTools::wineIcon(qint64 pid, const QVariant &windowIcon, int revision)
+{
+    Q_UNUSED(revision)
+    const int windowIconSize = largestSize(windowIcon.value<QIcon>());
+    if (windowIconSize >= SharpIconSize) {
+        return windowIcon;
+    }
+    const QString exe = wineExecutable(pid);
+    if (exe.isEmpty()) {
+        return windowIcon;
+    }
+    if (const auto it = m_exeIcons.constFind(exe); it != m_exeIcons.cend()) {
+        return largestSize(*it) > windowIconSize ? QVariant::fromValue(*it) : windowIcon;
+    }
+    if (!m_exeIconsPending.contains(exe)) {
+        m_exeIconsPending.insert(exe);
+        // Only the .exe thumbnailer, whatever previews the user has turned on for Dolphin;
+        // and games' .exe files can be far over the usual preview size limit.
+        const QStringList plugins{u"windowsexethumbnail"_s};
+        auto *job = new KIO::PreviewJob(KFileItemList{KFileItem(QUrl::fromLocalFile(exe))}, QSize(ExeIconSize, ExeIconSize), &plugins);
+        job->setIgnoreMaximumSize(true);
+        connect(job, &KIO::PreviewJob::gotPreview, this, [this, exe](const KFileItem &, const QPixmap &preview) {
+            m_exeIcons.insert(exe, QIcon(preview));
+        });
+        connect(job, &KJob::result, this, [this, exe] {
+            m_exeIconsPending.remove(exe);
+            if (!m_exeIcons.contains(exe)) {
+                m_exeIcons.insert(exe, QIcon());
+            }
+            ++m_wineIconRevision;
+            Q_EMIT wineIconsChanged();
+        });
+    }
+    return windowIcon;
+}

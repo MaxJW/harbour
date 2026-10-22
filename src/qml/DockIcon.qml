@@ -41,31 +41,40 @@ DockSlot {
     property point pressOffset
     property point pressPoint
 
-    iconSource: DockTools.iconUrl(model.decoration, HarbourSettings.evenTiles)
     // Games run through Steam have no desktop file; Steam knows their names.
     readonly property string steamName: DockTools.steamAppName(model.AppId ?? "")
-    // Bumped when one of the group's window titles changes (see label).
-    property int titleRevision: 0
+    // Bumped when one of the group's windows changes its title or icon (see shownWindow).
+    property int windowRevision: 0
 
-    label: {
-        if (steamName && childCount > 1) {
-            // A launcher and the game it starts share Steam's app id (Battle.net and
-            // Hearthstone): the window of the newest process, the game once it's up,
-            // names the icon. (The group's own order doesn't say which window is newer.)
-            // Games often title their window only after it has appeared.
-            titleRevision;
-            let newest = null;
-            let newestStart = -1;
-            for (const w of dock.windowIndexes(icon)) {
-                const start = DockTools.processStartTime(dock.role(w, TaskManager.AbstractTasksModel.AppPid) ?? 0);
-                if (start >= newestStart) {
-                    newest = w;
-                    newestStart = start;
-                }
-            }
-            return dock.role(newest, Qt.DisplayRole) || steamName;
+    // A launcher and the game it starts share Steam's app id (Battle.net and Hearthstone):
+    // the window of the newest process, the game once it's up, gives the icon its name and
+    // picture. (The group's own order doesn't say which window is newer.) null otherwise.
+    readonly property var shownWindow: {
+        if (!steamName || childCount < 2) {
+            return null;
         }
-        return steamName || model.AppName || model.display || "";
+        let newest = null;
+        let newestStart = -1;
+        for (const w of dock.windowIndexes(icon)) {
+            const start = DockTools.processStartTime(dock.role(w, TaskManager.AbstractTasksModel.AppPid) ?? 0);
+            if (start >= newestStart) {
+                newest = w;
+                newestStart = start;
+            }
+        }
+        return newest;
+    }
+
+    // Games often title their window, and set its icon, only after it has appeared.
+    iconSource: {
+        windowRevision;
+        const pid = shownWindow ? dock.role(shownWindow, TaskManager.AbstractTasksModel.AppPid) : model.AppPid;
+        const windowIcon = shownWindow ? dock.role(shownWindow, Qt.DecorationRole) : model.decoration;
+        return DockTools.iconUrl(DockTools.wineIcon(pid ?? 0, windowIcon, DockTools.wineIconRevision), HarbourSettings.evenTiles);
+    }
+    label: {
+        windowRevision;
+        return (shownWindow ? dock.role(shownWindow, Qt.DisplayRole) : "") || steamName || model.AppName || model.display || "";
     }
     running: model.IsWindow === true || model.IsGroupParent === true
     bounceOffset: dock.bounceOffset(appKey, dock.now)
@@ -238,8 +247,9 @@ DockSlot {
         enabled: icon.steamName !== "" && icon.childCount > 1
 
         function onDataChanged(topLeft, bottomRight, roles) {
-            if (topLeft.parent.row === icon.index && (roles.length === 0 || roles.includes(Qt.DisplayRole))) {
-                ++icon.titleRevision;
+            if (topLeft.parent.row === icon.index
+                    && (roles.length === 0 || roles.includes(Qt.DisplayRole) || roles.includes(Qt.DecorationRole))) {
+                ++icon.windowRevision;
             }
         }
     }
