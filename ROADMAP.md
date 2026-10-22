@@ -396,18 +396,18 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       "Battle.net" (shortcut) and "Dishonored" (steam_app_205100, appmanifest). The shortcut's name is
       "Battle.net", so Hearthstone (same prefix, same id) is labelled that too; renaming the shortcut in Steam
       changes it. Icon unchanged (the window's own).
-      Follow-up (user): on the real session the label went back to "steam_app_3964911085" after pressing Play in
-      Battle.net (Hearthstone's window joined the group). Not reproduced in the harness (Wayland and XWayland
-      stand-ins, windows opening/closing in several orders, WM_CLASS set after mapping). Hardened against both
-      plausible causes: the label also looks up the name it would show (so a raw "steam_app_<id>" is never shown
-      when Steam knows the id, even if the delegate's AppId lags), and a failed read (Steam rewrites shortcuts.vdf
-      at launch) falls back to the last name found. ⚠ Unconfirmed on the real session.
+      Follow-up: the user still saw "steam_app_…" once Hearthstone joined the group. Cause: `makepkg -si` found
+      the existing harbour-0.1.2-1 package and installed that (built 11:07, before this change), so the old label
+      (window title, then the group's raw app id) was running. A watcher on the real session confirmed the group
+      parent keeps AppId `steam_app_3964911085`, so no change to the lookup was needed (a speculative hardening
+      commit was reverted). ⚠ Not yet seen on the real session with the new package.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 
 ## Notes for the user
 
-- **Install:** `cd packaging/arch && makepkg -si` (needs sudo). Then start `harbour` (no autostart entry yet).
+- **Install:** `cd packaging/arch && makepkg -sif` (needs sudo), then `systemctl --user restart harbour`. Keep
+  the `-f` while pkgver/pkgrel are unchanged: without it makepkg installs the package already built for that version.
 - **Minimise animation:** after installing, pick Genie in System Settings → Workspace → Dock; that switches KWin from
   Magic Lamp to Harbour's effect. Until then Magic Lamp keeps aiming at Harbour's icons.
 - **Commit:** nothing is committed yet — say if you want the work committed.
