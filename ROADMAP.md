@@ -366,6 +366,19 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       audited from the binaries' NEEDED entries and the QML imports: qqc2-desktop-style dropped (the dock no
       longer uses Controls; the settings page gets its style from System Settings), wayland added (linked
       directly). The rebuild hook's message now covers AUR installs too.
+- [x] Fan still pixelated (user screenshot): tilted previews had jagged edges, and in "IMG_3169.PNG" the M sat a
+      pixel low. Reproduced in the harness: since the switch to the software renderer, `CurveRendering` and
+      `antialiasing` do nothing there; QPainter rasterises each tilted glyph and snaps it to whole pixels on its own.
+      Each fan row's pill and icon are now drawn upright into a layer (`layer.smooth`, a clear 4 px margin) that the
+      fan tilts as one picture: an even baseline, soft edges. Text is NativeRendering again (upright in the layer).
+      The thumbnails themselves were fine (KIO's downscale matched a Lanczos one); fan previews now ask for
+      device pixels like the dock's icons. A 2× layer looked no better at four times the memory. Hover checked on
+      label and icon; t-folders, t-anim, t-stress pass. Memory (harness, PSS, 13-row fan): +1.2 MB against the
+      old fan both while open (35.4 vs 34.2 MB) and after closing (33.7 vs 32.4 MB); flat over 20 open/close
+      cycles (33.2 → 33.6 → 33.7 → 33.7 MB at 1/5/10/20), so no leak.
+- [x] App icon for the README (user): `docs/images/icon.svg`, a glass dock magnified around an anchor, floating on
+      a dusk harbour. Not yet in the README (awaiting the user's OK) or installed as the app/KCM icon (would need
+      CMake + PKGBUILD changes; offered, not asked for).
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

@@ -104,57 +104,72 @@ T.Menu {
                         angle: fanItem.tilt * fanItem.eased
                     }
 
-                    Image {
-                        id: fanImage
+                    // The pill and icon, drawn upright into a layer which the fan then tilts as
+                    // one smoothly sampled picture. Tilted directly, the software renderer
+                    // snaps each glyph to whole pixels on its own (a ragged baseline) and leaves
+                    // the edges of previews jagged; the layer's clear margin gives soft edges.
+                    Item {
+                        id: face
 
-                        visible: !fanItem.isFolderLink
-                        width: stackPopup.fanIcon
-                        height: stackPopup.fanIcon
-                        x: (parent.width - width) / 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        scale: fanItem.hovered ? 1.08 : 1
-                        source: fanItem.entry ? stackPopup.iconFor(fanItem.entry.url, fanItem.entry.isDir) : ""
-                        sourceSize.width: width
-                        sourceSize.height: height
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        antialiasing: true // smooth edges when tilted
+                        readonly property real margin: 4
 
-                        Behavior on scale {
-                            NumberAnimation { duration: 90 }
+                        width: (fanItem.isFolderLink ? pill.width : pill.width + 10 + stackPopup.fanIcon) + 2 * margin
+                        height: parent.height
+                        // The icon centred in the fan item, as before; "Open in Dolphin" centred.
+                        x: fanItem.isFolderLink ? (parent.width - width) / 2 : (parent.width + stackPopup.fanIcon) / 2 + margin - width
+                        layer.enabled: true
+                        layer.smooth: true
+
+                        Image {
+                            id: fanImage
+
+                            visible: !fanItem.isFolderLink
+                            width: stackPopup.fanIcon
+                            height: stackPopup.fanIcon
+                            x: parent.width - face.margin - width
+                            anchors.verticalCenter: parent.verticalCenter
+                            scale: fanItem.hovered ? 1.08 : 1
+                            source: fanItem.entry ? stackPopup.iconFor(fanItem.entry.url, fanItem.entry.isDir) : ""
+                            sourceSize.width: width * Screen.devicePixelRatio
+                            sourceSize.height: height * Screen.devicePixelRatio
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+
+                            Behavior on scale {
+                                NumberAnimation { duration: 90 }
+                            }
                         }
-                    }
 
-                    // Name pill to the left of the icon; the accent colour when hovered.
-                    Rectangle {
-                        id: pill
+                        // Name pill to the left of the icon; the accent colour when hovered.
+                        Rectangle {
+                            id: pill
 
-                        readonly property string name: fanItem.isFolderLink ? qsTr("Open in Dolphin  ›") : fanItem.entry.name
+                            readonly property string name: fanItem.isFolderLink ? qsTr("Open in Dolphin  ›") : fanItem.entry.name
 
-                        height: pillText.implicitHeight + 8
-                        width: Math.min(pillText.implicitWidth + 22, stackPopup.fanWidth / 2 - stackPopup.fanIcon / 2 - 24)
-                        radius: height / 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: fanItem.isFolderLink ? (parent.width - width) / 2 : fanImage.x - width - 10
-                        color: fanItem.hovered ? palette.highlight
-                                               : (stackPopup.dock.dark ? Qt.rgba(0.11, 0.11, 0.13, 0.88) : Qt.rgba(0.97, 0.97, 0.98, 0.94))
-                        border.width: 1
-                        border.color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+                            height: pillText.implicitHeight + 8
+                            width: Math.min(pillText.implicitWidth + 22, stackPopup.fanWidth / 2 - stackPopup.fanIcon / 2 - 24)
+                            radius: height / 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: face.margin
+                            color: fanItem.hovered ? palette.highlight
+                                                   : (stackPopup.dock.dark ? Qt.rgba(0.11, 0.11, 0.13, 0.88) : Qt.rgba(0.97, 0.97, 0.98, 0.94))
+                            border.width: 1
+                            border.color: stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
 
-                        Text {
-                            id: pillText
+                            Text {
+                                id: pillText
 
-                            anchors.centerIn: parent
-                            width: Math.min(implicitWidth, parent.width - 22)
-                            text: pill.name
-                            elide: Text.ElideMiddle
-                            color: fanItem.hovered ? palette.highlightedText
-                                                   : (stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85))
-                            // Drawn from the glyph outlines, so it stays smooth however far the
-                            // fan tilts it (cached bitmaps or distance fields pixelate when rotated).
-                            renderType: Text.CurveRendering
-                            font.pixelSize: 13
-                            font.weight: fanItem.isFolderLink ? Font.DemiBold : Font.Medium
+                                anchors.centerIn: parent
+                                width: Math.min(implicitWidth, parent.width - 22)
+                                text: pill.name
+                                elide: Text.ElideMiddle
+                                color: fanItem.hovered ? palette.highlightedText
+                                                       : (stackPopup.dock.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.85))
+                                // Upright in the layer, so drawn like the dock's name label.
+                                renderType: Text.NativeRendering
+                                font.pixelSize: 13
+                                font.weight: fanItem.isFolderLink ? Font.DemiBold : Font.Medium
+                            }
                         }
                     }
 
@@ -162,8 +177,8 @@ T.Menu {
                         id: hoverArea
 
                         // The icon and its label together.
-                        x: pill.x
-                        width: fanItem.isFolderLink ? pill.width : fanImage.x + fanImage.width - pill.x
+                        x: face.x + face.margin
+                        width: face.width - 2 * face.margin
                         height: parent.height
                         hoverEnabled: true
                         onClicked: stackPopup.openItem(fanItem.isFolderLink ? stackPopup.stack.folderUrl : fanItem.entry.url)

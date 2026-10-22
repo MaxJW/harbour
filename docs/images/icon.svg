@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Harbour</title>
+  <defs>
+    <clipPath id="tile">
+      <rect x="100" y="100" width="824" height="824" rx="186"/>
+    </clipPath>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18"/>
+      <feOffset dy="14"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+    <filter id="iconShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dy="4"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <linearGradient id="sky" x1="0" y1="100" x2="0" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#101a3f"/>
+      <stop offset="0.55" stop-color="#3a3f86"/>
+      <stop offset="0.85" stop-color="#b8648a"/>
+      <stop offset="1" stop-color="#f4a07a"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="640" x2="0" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2b3f7e"/>
+      <stop offset="1" stop-color="#0b1532"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="512" cy="640" r="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff1d6"/>
+      <stop offset="0.55" stop-color="#ffc98f"/>
+      <stop offset="1" stop-color="#ff9c7a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="572" x2="0" y2="664" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.16"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="680" x2="0" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="reflectionMask">
+      <rect x="100" y="680" width="824" height="200" fill="url(#fade)"/>
+    </mask>
+
+    <linearGradient id="coral" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8a66"/>
+      <stop offset="1" stop-color="#e5435d"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd977"/>
+      <stop offset="1" stop-color="#f39a2b"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cf0dc"/>
+      <stop offset="1" stop-color="#1c9fc6"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9a4ff"/>
+      <stop offset="1" stop-color="#6a4fe0"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a6f08a"/>
+      <stop offset="1" stop-color="#2fb36b"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- The dock: glass shelf with five icons, magnified around the middle one. -->
+    <g id="dock">
+      <rect x="268" y="572" width="488" height="92" rx="30" fill="url(#glass)"/>
+      <rect x="268.75" y="572.75" width="486.5" height="90.5" rx="29.25" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="1.5"/>
+      <g filter="url(#iconShadow)">
+        <rect x="292" y="586" width="64" height="64" rx="15" fill="url(#coral)"/>
+        <rect x="370" y="574" width="76" height="76" rx="18" fill="url(#amber)"/>
+        <rect x="460" y="546" width="104" height="104" rx="24" fill="url(#teal)"/>
+        <rect x="578" y="574" width="76" height="76" rx="18" fill="url(#violet)"/>
+        <rect x="668" y="586" width="64" height="64" rx="15" fill="url(#mint)"/>
+      </g>
+      <rect x="292" y="586" width="64" height="64" rx="15" fill="url(#gloss)"/>
+      <rect x="370" y="574" width="76" height="76" rx="18" fill="url(#gloss)"/>
+      <rect x="460" y="546" width="104" height="104" rx="24" fill="url(#gloss)"/>
+      <rect x="578" y="574" width="76" height="76" rx="18" fill="url(#gloss)"/>
+      <rect x="668" y="586" width="64" height="64" rx="15" fill="url(#gloss)"/>
+      <!-- An anchor on the magnified icon. -->
+      <g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="512" cy="572" r="8"/>
+        <path d="M512 580 V630"/>
+        <path d="M497 593 H527"/>
+        <path d="M484 610 Q486 630 512 630 Q538 630 540 610"/>
+      </g>
+      <circle cx="512" cy="657" r="3.5" fill="#fff" fill-opacity="0.9"/>
+      <circle cx="408" cy="657" r="3.5" fill="#fff" fill-opacity="0.9"/>
+    </g>
+    <g id="dockBig" transform="translate(512 618) scale(1.35) translate(-512 -618)">
+      <use href="#dock"/>
+    </g>
+    <clipPath id="skyClip">
+      <rect x="100" y="100" width="824" height="540"/>
+    </clipPath>
+    <linearGradient id="glint" x1="0" y1="640" x2="0" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffcf9c" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#ffcf9c" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <g clip-path="url(#tile)">
+      <rect x="100" y="100" width="824" height="540" fill="url(#sky)"/>
+      <rect x="100" y="640" width="824" height="284" fill="url(#sea)"/>
+
+      <!-- Stars. -->
+      <g fill="#fff">
+        <circle cx="230" cy="220" r="3" opacity="0.8"/>
+        <circle cx="318" cy="168" r="2" opacity="0.6"/>
+        <circle cx="402" cy="260" r="2.5" opacity="0.7"/>
+        <circle cx="610" cy="190" r="2" opacity="0.6"/>
+        <circle cx="700" cy="250" r="3" opacity="0.8"/>
+        <circle cx="792" cy="176" r="2.5" opacity="0.7"/>
+        <circle cx="850" cy="300" r="2" opacity="0.5"/>
+        <circle cx="170" cy="330" r="2" opacity="0.5"/>
+      </g>
+
+      <!-- Sun setting behind the dock, and its glow on the water. -->
+      <g clip-path="url(#skyClip)">
+        <circle cx="512" cy="640" r="260" fill="#ff9c7a" opacity="0.35" filter="url(#soft)"/>
+        <circle cx="512" cy="640" r="170" fill="url(#sun)"/>
+      </g>
+      <path d="M392 640 H632 L580 924 H444 Z" fill="url(#glint)" opacity="0.45" filter="url(#soft)"/>
+
+      <use href="#dockBig"/>
+      <g mask="url(#reflectionMask)">
+        <use href="#dockBig" transform="matrix(1 0 0 -1 0 1360.2)"/>
+      </g>
+
+      <!-- Ripples. -->
+      <g stroke="#fff" stroke-linecap="round" fill="none">
+        <path d="M250 716 H360 M470 716 H560 M660 716 H780" stroke-width="3" stroke-opacity="0.22"/>
+        <path d="M250 744 H330 M410 744 H600 M680 744 H780" stroke-width="3" stroke-opacity="0.16"/>
+        <path d="M200 796 H300 M380 796 H460 M560 796 H700 M760 796 H830" stroke-width="3" stroke-opacity="0.11"/>
+        <path d="M170 852 H290 M450 852 H540 M640 852 H860" stroke-width="3" stroke-opacity="0.07"/>
+      </g>
+
+      <!-- A faint rim, as on Plasma's own app tiles. -->
+      <rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#fff" stroke-opacity="0.12" stroke-width="2"/>
+    </g>
+  </g>
+</svg>
