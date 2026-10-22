@@ -433,6 +433,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       a 32 px icon keeps it; launcher+game group: Battle.net icon → Hearthstone icon and name → back. t-hover
       passes; t-menuhold/t-switch screenshots match the previous commit (t-switch's second click lands on
       Discord under magnification, before and after). ⚠ Not yet seen on the real session.
+- [x] Tagged **v0.1.3** (2026-10-22; 0.1.3 in CMake and the PKGBUILD): Steam names for games without a desktop
+      file, a launcher's icon named and pictured after the game it started, sharp icons for Wine programs.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
