@@ -387,6 +387,15 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       t-hover, t-menuhold, t-switch, t-anim pass. ⚠ Not seen: a stack while its popup is open (same code path).
 - [x] Tagged **v0.1.2** (2026-10-22; 0.1.2 in CMake and the PKGBUILD): pressed icons, smooth fan rows, tighter
       package dependencies, the AUR PKGBUILD.
+- [x] Steam names for games without a desktop file (user, 2026-10-22: Hearthstone through Battle.net, a non-Steam
+      shortcut under Proton, showed as "steam_app_3964911085"). Plasma gives such windows AppId `steam_app_<id>`
+      and no AppName (checked on the user's session). `DockTools::steamAppName` looks the id up in each Steam
+      install's `userdata/*/config/shortcuts.vdf` (binary KeyValues) for non-Steam shortcuts, then in
+      `appmanifest_<id>.acf` across `libraryfolders.vdf` for installed games; read each time an icon is made, so a
+      rename in Steam shows next time. Verified in the harness with stand-in windows carrying the app ids: labels
+      "Battle.net" (shortcut) and "Dishonored" (steam_app_205100, appmanifest). The shortcut's name is
+      "Battle.net", so Hearthstone (same prefix, same id) is labelled that too; renaming the shortcut in Steam
+      changes it. ⚠ Not seen on the real session yet (needs a reinstall); icon unchanged (the window's own).
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

@@ -17,6 +17,9 @@
 #include <QDBusMessage>
 #include <QDBusPendingCall>
 #include <QCache>
+#include <QFile>
+#include <QRegularExpression>
+#include <QtEndian>
 #include <QIcon>
 #include <QLoggingCategory>
 #include <QPainter>
@@ -427,4 +430,163 @@ void DockTools::moveToFolder(const QList<QUrl> &urls, const QUrl &folder) const
     if (!urls.isEmpty()) {
         KIO::move(urls, folder)->start();
     }
+}
+
+namespace
+{
+// Steam installs: native, the ~/.steam link to it, and Flathub's.
+QStringList steamRoots()
+{
+    QStringList roots;
+    for (const QString &path : {QDir::homePath() + u"/.local/share/Steam"_s, QDir::homePath() + u"/.steam/steam"_s,
+                                QDir::homePath() + u"/.var/app/com.valvesoftware.Steam/.local/share/Steam"_s}) {
+        const QString root = QFileInfo(path).canonicalFilePath();
+        if (!root.isEmpty() && !roots.contains(root)) {
+            roots.append(root);
+        }
+    }
+    return roots;
+}
+
+// Steam's binary KeyValues (shortcuts.vdf): a type byte, a NUL-terminated key, then the
+// value: 0 a nested map up to its 8, 1 a NUL-terminated string, 2 a 32-bit integer.
+class BinaryVdf
+{
+public:
+    explicit BinaryVdf(const QByteArray &data)
+        : m_data(data)
+    {
+    }
+
+    // The map's entries, or nothing if the file is cut short or has types we don't know.
+    std::optional<QVariantMap> map()
+    {
+        QVariantMap result;
+        while (m_pos < m_data.size()) {
+            const char type = m_data[m_pos++];
+            if (type == 8) {
+                return result;
+            }
+            const auto key = string();
+            if (!key) {
+                return {};
+            }
+            if (type == 0) {
+                const auto value = map();
+                if (!value) {
+                    return {};
+                }
+                result.insert(*key, *value);
+            } else if (type == 1) {
+                const auto value = string();
+                if (!value) {
+                    return {};
+                }
+                result.insert(*key, *value);
+            } else if (type == 2 && m_pos + 4 <= m_data.size()) {
+                result.insert(*key, qFromLittleEndian<quint32>(m_data.constData() + m_pos));
+                m_pos += 4;
+            } else {
+                return {};
+            }
+        }
+        return {};
+    }
+
+private:
+    std::optional<QString> string()
+    {
+        const qsizetype end = m_data.indexOf('\0', m_pos);
+        if (end < 0) {
+            return {};
+        }
+        const QString value = QString::fromUtf8(m_data.mid(m_pos, end - m_pos));
+        m_pos = end + 1;
+        return value;
+    }
+
+    const QByteArray m_data;
+    qsizetype m_pos = 0;
+};
+
+// A key's value in Steam's text KeyValues (appmanifest_*.acf, libraryfolders.vdf):
+// every `"key" "value"` pair in the file, wherever it's nested.
+QStringList textVdfValues(const QString &path, const QString &key)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    const QRegularExpression pair(u"^\\s*\"%1\"\\s+\"((?:[^\"\\\\]|\\\\.)*)\""_s.arg(QRegularExpression::escape(key)),
+                                  QRegularExpression::MultilineOption | QRegularExpression::CaseInsensitiveOption);
+    QStringList values;
+    for (const QRegularExpressionMatch &match : pair.globalMatch(QString::fromUtf8(file.readAll()))) {
+        values.append(match.captured(1).replace(u"\\\\"_s, u"\\"_s).replace(u"\\\""_s, u"\""_s));
+    }
+    return values;
+}
+
+QString shortcutName(const QString &root, quint32 appId)
+{
+    const QFileInfoList users = QDir(root + u"/userdata"_s).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QFileInfo &user : users) {
+        QFile file(user.absoluteFilePath() + u"/config/shortcuts.vdf"_s);
+        if (!file.open(QIODevice::ReadOnly)) {
+            continue;
+        }
+        // The file holds one map, "shortcuts", of maps "0", "1", ...
+        const auto parsed = BinaryVdf(file.readAll()).map();
+        if (!parsed) {
+            continue;
+        }
+        const QVariantMap shortcuts = parsed->value(u"shortcuts"_s).toMap();
+        for (const QVariant &entry : shortcuts) {
+            QVariantMap fields;
+            // Older Steam writes the keys in lower case.
+            const QVariantMap raw = entry.toMap();
+            for (auto it = raw.begin(); it != raw.end(); ++it) {
+                fields.insert(it.key().toLower(), it.value());
+            }
+            if (fields.value(u"appid"_s).toUInt() == appId) {
+                return fields.value(u"appname"_s).toString();
+            }
+        }
+    }
+    return {};
+}
+
+QString installedGameName(const QString &root, quint32 appId)
+{
+    QStringList libraries = textVdfValues(root + u"/steamapps/libraryfolders.vdf"_s, u"path"_s);
+    libraries.prepend(root);
+    for (const QString &library : std::as_const(libraries)) {
+        const QStringList names = textVdfValues(library + u"/steamapps/appmanifest_%1.acf"_s.arg(appId), u"name"_s);
+        if (!names.isEmpty()) {
+            return names.first();
+        }
+    }
+    return {};
+}
+}
+
+QString DockTools::steamAppName(const QString &appId) const
+{
+    static const QRegularExpression steamAppId(u"^steam_app_(\\d+)$"_s);
+    const QRegularExpressionMatch match = steamAppId.match(appId);
+    bool ok = false;
+    const quint32 id = match.hasMatch() ? match.captured(1).toUInt(&ok) : 0;
+    if (!ok) {
+        return {};
+    }
+    // Read afresh each time (only when an icon is made), so a rename in Steam shows next time.
+    for (const QString &root : steamRoots()) {
+        QString name = shortcutName(root, id);
+        if (name.isEmpty()) {
+            name = installedGameName(root, id);
+        }
+        if (!name.isEmpty()) {
+            return name;
+        }
+    }
+    return {};
 }

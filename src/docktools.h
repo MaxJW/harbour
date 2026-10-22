@@ -79,6 +79,11 @@ public:
     /// Whether a URL dropped on the dock is an application that can be kept in it.
     Q_INVOKABLE bool isApplication(const QUrl &url) const;
 
+    /// The name Steam shows for a game run through it, from its window's app id
+    /// ("steam_app_<appid>", which has no desktop file): a non-Steam shortcut's name
+    /// (e.g. a Wine launcher added to Steam) or an installed game's. "" for anything else.
+    Q_INVOKABLE QString steamAppName(const QString &appId) const;
+
     /// Theme icon name for a file or folder, by MIME type (folders get their special icons).
     Q_INVOKABLE QString iconNameForUrl(const QUrl &url) const;
     /// A file's preview (see PreviewProvider).
