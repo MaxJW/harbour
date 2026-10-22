@@ -395,7 +395,13 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       rename in Steam shows next time. Verified in the harness with stand-in windows carrying the app ids: labels
       "Battle.net" (shortcut) and "Dishonored" (steam_app_205100, appmanifest). The shortcut's name is
       "Battle.net", so Hearthstone (same prefix, same id) is labelled that too; renaming the shortcut in Steam
-      changes it. ⚠ Not seen on the real session yet (needs a reinstall); icon unchanged (the window's own).
+      changes it. Icon unchanged (the window's own).
+      Follow-up (user): on the real session the label went back to "steam_app_3964911085" after pressing Play in
+      Battle.net (Hearthstone's window joined the group). Not reproduced in the harness (Wayland and XWayland
+      stand-ins, windows opening/closing in several orders, WM_CLASS set after mapping). Hardened against both
+      plausible causes: the label also looks up the name it would show (so a raw "steam_app_<id>" is never shown
+      when Steam knows the id, even if the delegate's AppId lags), and a failed read (Steam rewrites shortcuts.vdf
+      at launch) falls back to the last name found. ⚠ Unconfirmed on the real session.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

@@ -42,7 +42,12 @@ DockSlot {
     property point pressPoint
 
     iconSource: DockTools.iconUrl(model.decoration, HarbourSettings.evenTiles)
-    label: DockTools.steamAppName(model.AppId ?? "") || model.AppName || model.display || ""
+    // Games run through Steam have no desktop file: Plasma names them "steam_app_<id>".
+    // The shown name is looked up as well as the app id, in case the two disagree.
+    label: {
+        const name = model.AppName || model.display || "";
+        return DockTools.steamAppName(model.AppId ?? "") || DockTools.steamAppName(name) || name;
+    }
     running: model.IsWindow === true || model.IsGroupParent === true
     bounceOffset: dock.bounceOffset(appKey, dock.now)
     iconOpacity: (dragged && dock.dragRemoving) ? 0.5 : dropTarget ? 0.65 : 1

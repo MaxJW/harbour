@@ -18,6 +18,7 @@
 #include <QDBusPendingCall>
 #include <QCache>
 #include <QFile>
+#include <QHash>
 #include <QRegularExpression>
 #include <QtEndian>
 #include <QIcon>
@@ -578,15 +579,18 @@ QString DockTools::steamAppName(const QString &appId) const
     if (!ok) {
         return {};
     }
-    // Read afresh each time (only when an icon is made), so a rename in Steam shows next time.
+    // Read afresh each time, so a rename in Steam shows next time. Steam rewrites these
+    // files as games start, so a read that finds nothing falls back to the last name found.
+    static QHash<quint32, QString> lastFound;
     for (const QString &root : steamRoots()) {
         QString name = shortcutName(root, id);
         if (name.isEmpty()) {
             name = installedGameName(root, id);
         }
         if (!name.isEmpty()) {
+            lastFound.insert(id, name);
             return name;
         }
     }
-    return {};
+    return lastFound.value(id);
 }
