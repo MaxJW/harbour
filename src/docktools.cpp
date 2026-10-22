@@ -57,6 +57,9 @@ KService::Ptr serviceForLauncher(const QUrl &launcherUrl)
 constexpr qreal TileSide = 0.82;
 constexpr qreal TileRadius = 0.225;
 
+// How much darker an item is drawn while pressed or while its menu is open (by eye).
+constexpr qreal PressedDarkening = 0.3;
+
 // The rounded square an icon is drawn as, if it is one: its opaque part is square, fills
 // at least 90% of that square (a circle fills 79%), and has straight sides.
 std::optional<QRect> tileRect(const QImage &source)
@@ -125,6 +128,15 @@ IconProvider::IconProvider()
 
 QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
+    if (id.startsWith(u"pressed/")) {
+        QImage image = requestImage(id.mid(8), size, requestedSize).convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        // Black over the icon's own pixels only: colours scaled down, alpha untouched.
+        QPainter painter(&image);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceAtop);
+        painter.fillRect(image.rect(), QColor::fromRgbF(0, 0, 0, PressedDarkening));
+        return image;
+    }
+
     const bool even = id.startsWith(u"tile/");
     const QString path = even ? id.mid(5) : id;
     const QString kind = path.section(u'/', 0, 0);
@@ -183,6 +195,16 @@ QUrl DockTools::iconUrl(const QVariant &icon, bool evenTile) const
     }
     iconCache().insert(qicon.cacheKey(), new QIcon(qicon));
     return QUrl(prefix + u"cache/"_s + QString::number(qicon.cacheKey()));
+}
+
+QUrl DockTools::pressedIconUrl(const QUrl &iconUrl) const
+{
+    if (iconUrl.scheme() != u"image" || iconUrl.host() != u"harbour") {
+        return iconUrl;
+    }
+    QUrl url = iconUrl;
+    url.setPath(u"/pressed"_s + iconUrl.path());
+    return url;
 }
 
 QVariantList DockTools::desktopActions(const QUrl &launcherUrl) const

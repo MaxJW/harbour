@@ -31,6 +31,12 @@ Item {
 
     readonly property bool isDockSlot: true
 
+    // Darkened while the mouse is held down on it (not while dragged) and while its
+    // menu or stack is open, like macOS.
+    readonly property bool pressed: (mouseArea.pressed && !lifted)
+                                    || (dock.currentMenu !== null && dock.currentMenu.owner === slot)
+    readonly property url shownSource: pressed ? DockTools.pressedIconUrl(iconSource) : iconSource
+
     // Magnification: where this slot's resting edges land once the dock is magnified.
     readonly property real restLeft: parent ? parent.x + x : 0
     readonly property real shownLeft: dock.magnify(restLeft)
@@ -93,7 +99,7 @@ Item {
                 // The size being animated to, so a resize renders it once, at the end.
                 sourceSize.width: slot.dock.targetIconSize * Screen.devicePixelRatio
                 sourceSize.height: slot.dock.targetIconSize * Screen.devicePixelRatio
-                source: slot.iconSource
+                source: slot.shownSource
                 smooth: false
                 visible: slot.atRest
                 opacity: slot.iconOpacity
@@ -112,7 +118,7 @@ Item {
                 height: image.height
                 sourceSize.width: slot.dock.magnifiedIconSize * Screen.devicePixelRatio
                 sourceSize.height: slot.dock.magnifiedIconSize * Screen.devicePixelRatio
-                source: slot.iconSource
+                source: slot.shownSource
                 mipmap: true
                 smooth: true
                 visible: !slot.atRest

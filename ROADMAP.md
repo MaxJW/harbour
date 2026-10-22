@@ -379,6 +379,12 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - [x] App icon for the README (user): `docs/images/icon.svg`, a glass dock magnified around an anchor, floating on
       a dusk harbour, at the top of the README. Not installed as the app/KCM icon (would need CMake + PKGBUILD
       changes; offered, not asked for).
+- [x] Pressed icons darken (user, 2026-10-22), like macOS: while the mouse is held on an item (not while dragging
+      it) and while its menu or stack is open. `MultiEffect` draws nothing under the software renderer, so the
+      icon provider serves a darker copy (`image://harbour/pressed/...`, 30% black over the icon's own pixels, by
+      eye) and `DockSlot` swaps to it. Verified in the harness: Steam's icon ×0.70 brightness with its menu open,
+      back after Escape; the Trash dark for the length of a click; switching menus moves the darkening.
+      t-hover, t-menuhold, t-switch, t-anim pass. ⚠ Not seen: a stack while its popup is open (same code path).
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

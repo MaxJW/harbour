@@ -13,7 +13,8 @@
  *   image://harbour/theme/<icon-name>
  *   image://harbour/cache/<QIcon::cacheKey()>   for icons without a theme name
  * Either can be prefixed with tile/ (image://harbour/tile/theme/<icon-name>) to even out
- * an icon drawn as a rounded square, see evenTile() in the .cpp.
+ * an icon drawn as a rounded square, see evenTile() in the .cpp, and that with pressed/
+ * for the darker icon shown while it's held down (image://harbour/pressed/tile/...).
  */
 class IconProvider : public QQuickImageProvider
 {
@@ -52,6 +53,9 @@ public:
     /// URL for an icon given as a QIcon (e.g. a TasksModel decoration) or an icon name.
     /// evenTile: draw it at the dock's common tile size and corners if it's a rounded square.
     Q_INVOKABLE QUrl iconUrl(const QVariant &icon, bool evenTile = false) const;
+    /// The same icon darkened, for while it's pressed. The software renderer the dock
+    /// uses has no shader effects, so it's done to the image itself.
+    Q_INVOKABLE QUrl pressedIconUrl(const QUrl &iconUrl) const;
 
     /// The desktop file's additional actions ("New Private Window" etc.) as
     /// [{text, icon, separator}], in desktop file order.
