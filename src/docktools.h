@@ -83,6 +83,8 @@ public:
     /// ("steam_app_<appid>", which has no desktop file): a non-Steam shortcut's name
     /// (e.g. a Wine launcher added to Steam) or an installed game's. "" for anything else.
     Q_INVOKABLE QString steamAppName(const QString &appId) const;
+    /// When a process started (clock ticks since boot, from /proc), or -1 if unknown.
+    Q_INVOKABLE qint64 processStartTime(qint64 pid) const;
 
     /// Theme icon name for a file or folder, by MIME type (folders get their special icons).
     Q_INVOKABLE QString iconNameForUrl(const QUrl &url) const;

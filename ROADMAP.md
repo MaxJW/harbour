@@ -404,8 +404,7 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
 - [x] Launcher + game under one Steam id named after the game (user's pick of the options offered, 2026-10-22):
       when a Steam-named icon has several windows, the newest one's title labels it (children of a group are in
       the order the windows appeared, checked in the harness). Battle.net alone → "Battle.net"; press Play →
-      "Hearthstone"; game closed → "Battle.net". Trade-off accepted: a newer launcher window (e.g. "Battle.net
-      Login") takes over while it's open. Verified in the harness with XWayland stand-ins (hover-label
+      "Hearthstone"; game closed → "Battle.net". (First version used the group's last window: see below.) Verified in the harness with XWayland stand-ins (hover-label
       screenshots at each step); t-hover passes. ⚠ If the launcher closes when the game starts, the lone game
       window shows the Steam name ("Battle.net"): with one window the Steam name wins. Icon unchanged.
       Follow-up (user, real session, new package): still "Battle.net" with Hearthstone up, windows in the right
@@ -413,7 +412,14 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       change doesn't touch the group's delegate. DockIcon now listens to the model's dataChanged for its own
       children (only for Steam-named icons with several windows) and recomputes. Reproduced and checked in the
       harness with an X11 stand-in that retitles itself 1 s after mapping: previous commit "Unity" (stuck),
-      now "Hearthstone"; the newest-window sequence and t-hover unchanged. ⚠ Not yet seen on the real session.
+      now "Hearthstone"; the newest-window sequence and t-hover unchanged.
+      Still "Battle.net" on the real session. A debug build swapped in for the user's dock logged the live launch:
+      when Hearthstone's window arrives, Plasma forms the group as [Hearthstone, Battle.net] (new window first),
+      while a dock started with both open sees [Battle.net, Hearthstone] — the group's order says nothing about
+      age. Now the window whose process started last (`DockTools::processStartTime`, /proc/<pid>/stat) names the
+      icon: the game a launcher starts is always the newer process, and a later launcher window ("Battle.net
+      Login", same process) no longer takes over. AppPid checked on the real session (Hearthstone.exe 14:49,
+      Battle.net 14:43). Seen working on the real session (user: "It worked!"), build swapped in for the dock.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

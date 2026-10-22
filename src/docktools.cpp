@@ -590,3 +590,18 @@ QString DockTools::steamAppName(const QString &appId) const
     }
     return {};
 }
+
+qint64 DockTools::processStartTime(qint64 pid) const
+{
+    QFile file(u"/proc/%1/stat"_s.arg(pid));
+    if (pid <= 0 || !file.open(QIODevice::ReadOnly)) {
+        return -1;
+    }
+    // "pid (comm) state ppid ...": comm can hold spaces and brackets, so count the fields
+    // after its last ')'. starttime is field 22, the 20th after comm.
+    const QByteArray stat = file.readAll();
+    const QList<QByteArray> fields = stat.mid(stat.lastIndexOf(')') + 2).split(' ');
+    bool ok = false;
+    const qint64 start = fields.value(19).toLongLong(&ok);
+    return ok ? start : -1;
+}

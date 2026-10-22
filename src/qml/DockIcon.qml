@@ -50,10 +50,20 @@ DockSlot {
     label: {
         if (steamName && childCount > 1) {
             // A launcher and the game it starts share Steam's app id (Battle.net and
-            // Hearthstone): the newest window, the game once it's up, names the icon.
+            // Hearthstone): the window of the newest process, the game once it's up,
+            // names the icon. (The group's own order doesn't say which window is newer.)
             // Games often title their window only after it has appeared.
             titleRevision;
-            return dock.role(dock.modelIndex(icon, childCount - 1), Qt.DisplayRole) || steamName;
+            let newest = null;
+            let newestStart = -1;
+            for (const w of dock.windowIndexes(icon)) {
+                const start = DockTools.processStartTime(dock.role(w, TaskManager.AbstractTasksModel.AppPid) ?? 0);
+                if (start >= newestStart) {
+                    newest = w;
+                    newestStart = start;
+                }
+            }
+            return dock.role(newest, Qt.DisplayRole) || steamName;
         }
         return steamName || model.AppName || model.display || "";
     }
