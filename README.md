@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/icon.svg" alt="" width="128">
+
 # Harbour
 
 **A macOS-style dock for KDE Plasma 6 on Wayland.**

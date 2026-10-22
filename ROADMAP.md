@@ -377,8 +377,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       old fan both while open (35.4 vs 34.2 MB) and after closing (33.7 vs 32.4 MB); flat over 20 open/close
       cycles (33.2 → 33.6 → 33.7 → 33.7 MB at 1/5/10/20), so no leak.
 - [x] App icon for the README (user): `docs/images/icon.svg`, a glass dock magnified around an anchor, floating on
-      a dusk harbour. Not yet in the README (awaiting the user's OK) or installed as the app/KCM icon (would need
-      CMake + PKGBUILD changes; offered, not asked for).
+      a dusk harbour, at the top of the README. Not installed as the app/KCM icon (would need CMake + PKGBUILD
+      changes; offered, not asked for).
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 
