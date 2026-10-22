@@ -385,6 +385,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       eye) and `DockSlot` swaps to it. Verified in the harness: Steam's icon ×0.70 brightness with its menu open,
       back after Escape; the Trash dark for the length of a click; switching menus moves the darkening.
       t-hover, t-menuhold, t-switch, t-anim pass. ⚠ Not seen: a stack while its popup is open (same code path).
+- [x] Tagged **v0.1.2** (2026-10-22; 0.1.2 in CMake and the PKGBUILD): pressed icons, smooth fan rows, tighter
+      package dependencies, the AUR PKGBUILD.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 
