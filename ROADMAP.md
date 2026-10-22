@@ -408,6 +408,12 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       Login") takes over while it's open. Verified in the harness with XWayland stand-ins (hover-label
       screenshots at each step); t-hover passes. ⚠ If the launcher closes when the game starts, the lone game
       window shows the Steam name ("Battle.net"): with one window the Steam name wins. Icon unchanged.
+      Follow-up (user, real session, new package): still "Battle.net" with Hearthstone up, windows in the right
+      order. The label was worked out when the game's window joined, before it had its title; a child's title
+      change doesn't touch the group's delegate. DockIcon now listens to the model's dataChanged for its own
+      children (only for Steam-named icons with several windows) and recomputes. Reproduced and checked in the
+      harness with an X11 stand-in that retitles itself 1 s after mapping: previous commit "Unity" (stuck),
+      now "Hearthstone"; the newest-window sequence and t-hover unchanged. ⚠ Not yet seen on the real session.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
   outside the repo; the system file belongs to the spotify-launcher package.
 

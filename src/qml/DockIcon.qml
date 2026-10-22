@@ -42,11 +42,17 @@ DockSlot {
     property point pressPoint
 
     iconSource: DockTools.iconUrl(model.decoration, HarbourSettings.evenTiles)
+    // Games run through Steam have no desktop file; Steam knows their names.
+    readonly property string steamName: DockTools.steamAppName(model.AppId ?? "")
+    // Bumped when one of the group's window titles changes (see label).
+    property int titleRevision: 0
+
     label: {
-        const steamName = DockTools.steamAppName(model.AppId ?? "");
         if (steamName && childCount > 1) {
             // A launcher and the game it starts share Steam's app id (Battle.net and
             // Hearthstone): the newest window, the game once it's up, names the icon.
+            // Games often title their window only after it has appeared.
+            titleRevision;
             return dock.role(dock.modelIndex(icon, childCount - 1), Qt.DisplayRole) || steamName;
         }
         return steamName || model.AppName || model.display || "";
@@ -216,6 +222,17 @@ DockSlot {
         }
     }
     Component.onDestruction: dock.iconDestroyed(icon, createdKey, createdAsStartup)
+
+    Connections {
+        target: icon.tasksModel
+        enabled: icon.steamName !== "" && icon.childCount > 1
+
+        function onDataChanged(topLeft, bottomRight, roles) {
+            if (topLeft.parent.row === icon.index && (roles.length === 0 || roles.includes(Qt.DisplayRole))) {
+                ++icon.titleRevision;
+            }
+        }
+    }
 
     Connections {
         target: icon.dock.dockWindow
