@@ -71,7 +71,7 @@ systemctl --user enable --now harbour.service
 
 ### Other distributions
 
-You'll need CMake, extra-cmake-modules, Qt 6 (Base, Declarative, Wayland, including the private development headers), KDE Frameworks 6 (Config, CoreAddons, GlobalAccel, KIO, Service, KCMUtils, Kirigami), layer-shell-qt, plasma-wayland-protocols, plasma-workspace and KWin's development files.
+You'll need CMake, extra-cmake-modules, Qt 6 (Base, Declarative, Wayland, including the private development headers), KDE Frameworks 6 (Config, CoreAddons, GlobalAccel, KIO, Service, KCMUtils, Kirigami), layer-shell-qt, plasma-wayland-protocols, plasma-workspace, KWin's development files and the Vulkan headers (KWin's headers include them).
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
@@ -94,7 +94,7 @@ Pass `-DHARBOUR_BUILD_KWIN_EFFECT=OFF` to skip the Genie effect.
 
 Everything lives in **System Settings → Workspace → Dock**, and it's all stored in `~/.config/harbourrc`. The page covers:
 
-| | |
+| Section | Settings |
 |---|---|
 | **Look** | Icon size, magnification, glass, the same physical size on every screen |
 | **Behaviour** | Auto-hide, which screen to use, the minimise effect (Genie, Scale, Suck or KDE's own), indicators, bouncing on launch, evened-out square app icons, click-to-minimise |
@@ -120,7 +120,7 @@ systemctl --user stop harbour.service   # if the installed one is running
 ./build/bin/harbour
 ```
 
-The UI tests need `kwin_wayland`, `spectacle`, ImageMagick, Pillow and PyGObject with GTK 3. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
+The UI tests need `kwin_wayland`, `spectacle`, `qdbus6`, `kwriteconfig6`, ImageMagick, Pillow and PyGObject with GTK 3. Each one starts a hidden KWin with its own D-Bus session and config, so it never touches your real desktop or cursor:
 
 ```sh
 tests/ui/harness.sh tests/ui/t-switch.sh   # one-click menu switching

@@ -459,6 +459,11 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       changed it. t-hover, t-menuhold, t-anim pass.
 - [x] Tagged **v0.1.4** (2026-10-23; 0.1.4 in CMake and the PKGBUILD): icon theme changes apply without
       restarting the dock.
+- [x] README screenshots retaken (2026-10-23) so they match the current dock: evened-out square icons, the
+      user's current launchers, the dock staying magnified and the pressed icon darkened while a stack or menu is
+      open, and type icons in place of image previews. Same recipe as the originals: the harness over the "Next"
+      wallpaper (a frameless QML window, hidden from the dock with a KWin script), a made-up Downloads folder set
+      as the only fan stack, then rest → magnify Obsidian → open the fan → right-click Steam, cropped as before.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
