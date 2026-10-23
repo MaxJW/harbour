@@ -457,6 +457,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       icon): Papirus → Breeze Dark → Papirus showed Discord → grey logo → grey logo before, Discord → Equibop's
       logo (Breeze has no Discord) → Discord now; without a window icon unchanged; Papirus ↔ Papirus-Dark never
       changed it. t-hover, t-menuhold, t-anim pass.
+- [x] Tagged **v0.1.4** (2026-10-23; 0.1.4 in CMake and the PKGBUILD): icon theme changes apply without
+      restarting the dock.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
