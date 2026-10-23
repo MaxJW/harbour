@@ -435,6 +435,28 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       Discord under magnification, before and after). ⚠ Not yet seen on the real session.
 - [x] Tagged **v0.1.3** (2026-10-22; 0.1.3 in CMake and the PKGBUILD): Steam names for games without a desktop
       file, a launcher's icon named and pictured after the game it started, sharp icons for Wine programs.
+- [x] Icon theme changes apply live (user, 2026-10-23: a new icon pack only showed after
+      `systemctl --user restart harbour`). Qt Quick caches images by URL and `image://harbour/theme/<name>` stays
+      the same across themes. `DockTools` listens for `org.kde.KIconLoader.iconChanged` on the session bus (sent
+      once per icon group by System Settings / `plasma-changeicons`), debounced 100 ms, and bumps
+      `iconThemeRevision`; `iconUrl()` takes it and appends `?<revision>` (ignored by `IconProvider`), so every
+      dock icon, the Trash, stacks and stack popups are requested again from the new theme. Menus already built
+      their icons fresh. Memory (harness, RssAnon, 24 switches Papirus ↔ breeze-dark): live heap +1.7 MB then flat
+      (Qt Quick's ≤2 MB cache of unreferenced images); glibc kept a further ~3 MB freed, so `malloc_trim` runs 1 s
+      after each redraw: 20.5 → 23.2 MB after the 24 switches and 40 s idle, levelling off (26.3 MB without the trim).
+      No timers or work at idle. Verified in the harness with `plasma-changeicons`: Papirus → Breeze Dark →
+      Papirus → Breeze → Papirus-Dark screenshots each in the new theme; pressed (darkened) icon and stack popup
+      after a change; t-hover, t-anim, t-menuhold pass. ⚠ Not yet seen on the real session.
+      Follow-up (user, real session): Equibop showed its own logo instead of the `Icon=discord` the user set in
+      `~/.local/share/applications/equibop.desktop`, after a switch through a theme without "discord". The tasks
+      model works an app's icon out once per window; asked again (the dock now re-reads it on a theme change)
+      under a theme without it, it falls back to the window's own icon and keeps that through later changes.
+      Old builds never asked again, so never showed it. `DockTools::appIcon` uses the desktop file's icon when the
+      model gives a nameless (window) icon and the theme has the desktop file's; anything else is unchanged.
+      Reproduced and checked in the harness with a stand-in window (app id "equibop", Equibop's PNG as window
+      icon): Papirus → Breeze Dark → Papirus showed Discord → grey logo → grey logo before, Discord → Equibop's
+      logo (Breeze has no Discord) → Discord now; without a window icon unchanged; Papirus ↔ Papirus-Dark never
+      changed it. t-hover, t-menuhold, t-anim pass.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),

@@ -6,6 +6,7 @@
 #include <QQuickImageProvider>
 #include <QQuickItem>
 #include <QSet>
+#include <QTimer>
 #include <QUrl>
 #include <QVariant>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -18,6 +19,8 @@
  * Either can be prefixed with tile/ (image://harbour/tile/theme/<icon-name>) to even out
  * an icon drawn as a rounded square, see evenTile() in the .cpp, and that with pressed/
  * for the darker icon shown while it's held down (image://harbour/pressed/tile/...).
+ * A trailing ?<revision> (DockTools::iconThemeRevision) is ignored; it only makes the URL
+ * new, so Qt Quick asks again rather than reusing its copy from the old icon theme.
  */
 class IconProvider : public QQuickImageProvider
 {
@@ -49,16 +52,26 @@ class DockTools : public QObject
     Q_PROPERTY(bool logGeometry READ logGeometry CONSTANT)
     /// Goes up each time a program's icon has been read for wineIcon().
     Q_PROPERTY(int wineIconRevision READ wineIconRevision NOTIFY wineIconsChanged)
+    /// Goes up each time the icon theme is changed (System Settings → Colours & Themes → Icons).
+    Q_PROPERTY(int iconThemeRevision READ iconThemeRevision NOTIFY iconThemeChanged)
 
 public:
-    using QObject::QObject;
+    explicit DockTools(QObject *parent = nullptr);
 
     bool logGeometry() const;
     int wineIconRevision() const { return m_wineIconRevision; }
+    int iconThemeRevision() const { return m_iconThemeRevision; }
 
     /// URL for an icon given as a QIcon (e.g. a TasksModel decoration) or an icon name.
     /// evenTile: draw it at the dock's common tile size and corners if it's a rounded square.
-    Q_INVOKABLE QUrl iconUrl(const QVariant &icon, bool evenTile = false) const;
+    /// Pass iconThemeRevision so the binding asks again, and the icon is drawn again, when
+    /// the icon theme changes.
+    Q_INVOKABLE QUrl iconUrl(const QVariant &icon, bool evenTile = false, int themeRevision = 0) const;
+    /// An app's icon in the dock: the tasks model's, unless that is a window's own picture
+    /// while the app's desktop file names an icon the theme has. The model works an app's
+    /// icon out once per window, so asked under a theme without it (e.g. "discord" in
+    /// Breeze), it keeps the window's for good, through later theme changes.
+    Q_INVOKABLE QVariant appIcon(const QUrl &launcherUrl, const QVariant &decoration, int themeRevision) const;
     /// The same icon darkened, for while it's pressed. The software renderer the dock
     /// uses has no shader effects, so it's done to the image itself.
     Q_INVOKABLE QUrl pressedIconUrl(const QUrl &iconUrl) const;
@@ -116,9 +129,15 @@ public:
 
 Q_SIGNALS:
     void wineIconsChanged();
+    void iconThemeChanged();
+
+private Q_SLOTS:
+    void onIconLoaderChanged();
 
 private:
     QHash<QString, QIcon> m_exeIcons; // by .exe path; a null icon when it has none
     QSet<QString> m_exeIconsPending;
     int m_wineIconRevision = 0;
+    int m_iconThemeRevision = 0;
+    QTimer m_iconThemeDebounce;
 };

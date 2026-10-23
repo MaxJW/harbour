@@ -7,7 +7,7 @@ DockSlot {
 
     readonly property bool dropTarget: dock.dropTarget === trash
 
-    iconSource: DockTools.iconUrl(Trash.empty ? "user-trash" : "user-trash-full")
+    iconSource: DockTools.iconUrl(Trash.empty ? "user-trash" : "user-trash-full", false, DockTools.iconThemeRevision)
     label: qsTr("Trash")
     iconOpacity: dropTarget ? 0.65 : 1
 

@@ -28,6 +28,10 @@
 
 #include <optional>
 
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
+
 using namespace Qt::StringLiterals;
 
 namespace
@@ -129,8 +133,9 @@ IconProvider::IconProvider()
 {
 }
 
-QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
+QImage IconProvider::requestImage(const QString &requestId, QSize *size, const QSize &requestedSize)
 {
+    const QString id = requestId.section(u'?', 0, 0);
     if (id.startsWith(u"pressed/")) {
         QImage image = requestImage(id.mid(8), size, requestedSize).convertToFormat(QImage::Format_ARGB32_Premultiplied);
         // Black over the icon's own pixels only: colours scaled down, alpha untouched.
@@ -181,23 +186,69 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
     return image;
 }
 
-QUrl DockTools::iconUrl(const QVariant &icon, bool evenTile) const
+DockTools::DockTools(QObject *parent)
+    : QObject(parent)
+{
+    // System Settings announces a new icon theme once per icon group (KIconLoader::emitChange),
+    // all at once; the dock redraws once, after KDE's icon loader in this process has
+    // switched themes on the same signals.
+    m_iconThemeDebounce.setSingleShot(true);
+    m_iconThemeDebounce.setInterval(100);
+    connect(&m_iconThemeDebounce, &QTimer::timeout, this, [this] {
+        ++m_iconThemeRevision;
+        Q_EMIT iconThemeChanged();
+#ifdef __GLIBC__
+        // Once every icon has been drawn again, hand back what the old ones freed: glibc
+        // keeps it otherwise (~3 MB after a few theme changes, measured in the UI harness).
+        QTimer::singleShot(1000, this, [] {
+            malloc_trim(0);
+        });
+#endif
+    });
+    QDBusConnection::sessionBus().connect(QString(),
+                                          u"/KIconLoader"_s,
+                                          u"org.kde.KIconLoader"_s,
+                                          u"iconChanged"_s,
+                                          this,
+                                          SLOT(onIconLoaderChanged()));
+}
+
+void DockTools::onIconLoaderChanged()
+{
+    m_iconThemeDebounce.start();
+}
+
+QUrl DockTools::iconUrl(const QVariant &icon, bool evenTile, int themeRevision) const
 {
     const QString prefix = evenTile ? u"image://harbour/tile/"_s : u"image://harbour/"_s;
+    const QString suffix = themeRevision > 0 ? u"?"_s + QString::number(themeRevision) : QString();
 
     if (icon.typeId() == QMetaType::QString) {
-        return QUrl(prefix + u"theme/"_s + icon.toString());
+        return QUrl(prefix + u"theme/"_s + icon.toString() + suffix);
     }
 
     const QIcon qicon = icon.value<QIcon>();
     if (qicon.isNull()) {
-        return QUrl(prefix + u"theme/application-x-executable"_s);
+        return QUrl(prefix + u"theme/application-x-executable"_s + suffix);
     }
     if (!qicon.name().isEmpty()) {
-        return QUrl(prefix + u"theme/"_s + qicon.name());
+        return QUrl(prefix + u"theme/"_s + qicon.name() + suffix);
     }
     iconCache().insert(qicon.cacheKey(), new QIcon(qicon));
-    return QUrl(prefix + u"cache/"_s + QString::number(qicon.cacheKey()));
+    return QUrl(prefix + u"cache/"_s + QString::number(qicon.cacheKey()) + suffix);
+}
+
+QVariant DockTools::appIcon(const QUrl &launcherUrl, const QVariant &decoration, int themeRevision) const
+{
+    Q_UNUSED(themeRevision)
+    if (!decoration.value<QIcon>().name().isEmpty()) {
+        return decoration;
+    }
+    const KService::Ptr service = serviceForLauncher(launcherUrl);
+    if (!service || service->icon().isEmpty() || !QIcon::hasThemeIcon(service->icon())) {
+        return decoration;
+    }
+    return QIcon::fromTheme(service->icon());
 }
 
 QUrl DockTools::pressedIconUrl(const QUrl &iconUrl) const

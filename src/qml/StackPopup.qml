@@ -303,7 +303,7 @@ T.Menu {
                         height: 16
                         sourceSize.width: 16
                         sourceSize.height: 16
-                        source: DockTools.iconUrl("system-file-manager")
+                        source: DockTools.iconUrl("system-file-manager", false, DockTools.iconThemeRevision)
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -355,7 +355,7 @@ T.Menu {
 
     function iconFor(url: url, isDir: bool): url {
         // Files show their preview (photos, PDFs, videos...) or else their type's icon.
-        return isDir ? DockTools.iconUrl(DockTools.iconNameForUrl(url)) : DockTools.previewUrl(url);
+        return isDir ? DockTools.iconUrl(DockTools.iconNameForUrl(url), false, DockTools.iconThemeRevision) : DockTools.previewUrl(url);
     }
 
     function openItem(url: url) {

@@ -69,8 +69,9 @@ DockSlot {
     iconSource: {
         windowRevision;
         const pid = shownWindow ? dock.role(shownWindow, TaskManager.AbstractTasksModel.AppPid) : model.AppPid;
-        const windowIcon = shownWindow ? dock.role(shownWindow, Qt.DecorationRole) : model.decoration;
-        return DockTools.iconUrl(DockTools.wineIcon(pid ?? 0, windowIcon, DockTools.wineIconRevision), HarbourSettings.evenTiles);
+        const windowIcon = shownWindow ? dock.role(shownWindow, Qt.DecorationRole)
+                                       : DockTools.appIcon(launcherUrl, model.decoration, DockTools.iconThemeRevision);
+        return DockTools.iconUrl(DockTools.wineIcon(pid ?? 0, windowIcon, DockTools.wineIconRevision), HarbourSettings.evenTiles, DockTools.iconThemeRevision);
     }
     label: {
         windowRevision;

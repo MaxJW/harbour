@@ -13,7 +13,7 @@ DockSlot {
     readonly property url folderUrl: DockTools.folderUrl(folderPath)
     readonly property bool dropTarget: dock.dropTarget === stack
 
-    iconSource: DockTools.iconUrl(DockTools.iconNameForUrl(folderUrl))
+    iconSource: DockTools.iconUrl(DockTools.iconNameForUrl(folderUrl), false, DockTools.iconThemeRevision)
     label: folderPath.replace(/\/+$/, "").split("/").pop() || folderPath
     iconOpacity: dropTarget ? 0.65 : 1
 
