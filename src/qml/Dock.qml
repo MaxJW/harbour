@@ -620,7 +620,11 @@ Item {
 
         const windows = windowIndexes(icon);
         if (HarbourSettings.clickToMinimize && icon.model.IsActive) {
-            for (const w of windows) {
+            // The active window last: minimised first, it hands focus to one of its siblings
+            // (a game's launcher), which then counts as the app's most recent window and is
+            // the one a second click brings back.
+            const isActive = w => role(w, TaskManager.AbstractTasksModel.IsActive) === true;
+            for (const w of windows.filter(w => !isActive(w)).concat(windows.filter(isActive))) {
                 if (!role(w, TaskManager.AbstractTasksModel.IsMinimized)) {
                     tasksModel.requestToggleMinimized(w);
                 }
