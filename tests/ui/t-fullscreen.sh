@@ -1,6 +1,7 @@
-# Over a fullscreen window the dock stays hidden (even with auto-hide off), and resting
-# the pointer on the bottom row brings it up over the window. KWin turns client screen
-# edges off under fullscreen windows; Harbour's KWin script reports the bottom row.
+# Over a fullscreen window the dock stays hidden (even with auto-hide off). Resting the
+# pointer on the bottom row brings it up over the window only with RevealOverFullscreen
+# on (off by default). KWin turns client screen edges off under fullscreen windows;
+# Harbour's KWin script reports the bottom row.
 kwin_script() {
     local id
     id=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$1" "ci-$2")
@@ -25,7 +26,16 @@ probe move $((W / 2)) $((H / 3)); sleep 1.5
 mark "fullscreen, pointer away"
 dock away
 
-mark "rest on the bottom row"
+mark "rest on the bottom row, RevealOverFullscreen off"
+kwriteconfig6 --file harbourrc --group Behaviour --key RevealOverFullscreen false
+sleep 0.5
+probe move $((W / 2)) $((H - 1)); sleep 0.8
+dock pushed-setting-off
+probe move $((W / 2)) $((H / 3)); sleep 1.5
+
+mark "rest on the bottom row, RevealOverFullscreen on"
+kwriteconfig6 --file harbourrc --group Behaviour --key RevealOverFullscreen true
+sleep 0.5
 probe move $((W / 2)) $((H - 1)); sleep 0.8
 dock pushed
 probe move $((W / 2)) $((H / 3)); sleep 1.5

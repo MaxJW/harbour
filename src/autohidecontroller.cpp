@@ -112,7 +112,7 @@ void AutoHideController::setFullscreen(bool fullscreen)
 
 void AutoHideController::pointerAtScreenEdge(bool atEdge)
 {
-    if (!atEdge || !m_fullscreen || m_state != Hidden) {
+    if (!atEdge || !m_fullscreen || m_state != Hidden || !m_settings->revealOverFullscreen()) {
         m_fullscreenEdgeTimer.stop();
         return;
     }

@@ -464,6 +464,21 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       open, and type icons in place of image previews. Same recipe as the originals: the harness over the "Next"
       wallpaper (a frameless QML window, hidden from the dock with a KWin script), a made-up Downloads folder set
       as the only fan stack, then rest → magnify Obsidian → open the fan → right-click Steam, cropped as before.
+- [x] Showing over fullscreen windows is now a setting, off by default (user, 2026-10-26: the dock kept coming up
+      over a fullscreen game when the pointer went to the bottom; Hearthstone's hand of cards is there — the RTS
+      risk noted above). `RevealOverFullscreen` (Behaviour), checkbox "Show the Dock over fullscreen windows"
+      under Hiding in the KCM; `AutoHideController::pointerAtScreenEdge` ignores the bottom row unless it's on.
+      The KWin script still tracks the pointer while a window is fullscreen (cheap; it only reports changes).
+      t-fullscreen updated: with it off, resting on the bottom row leaves the dock hidden; on, as before. KCM
+      checked in kcmshell6 from the build dir (unticked by default). ⚠ With it off, the dock can't be reached
+      over a fullscreen window at all.
+- [x] Click-to-minimise then click again brought back Battle.net, not Hearthstone (user). Minimising went in
+      the group's order, which on the real session is [Hearthstone, Battle.net]: the active game went first and
+      KWin handed focus to Battle.net, making it the most recent window, which the second click restores (or,
+      not yet minimised, the one a click minimises). The active window is now minimised last. Reproduced in the
+      harness only with the group order reversed by a temporary patch (stand-ins always give [Battle.net,
+      Hearthstone]): previous commit → Battle.net active after the second click; now → Hearthstone. t-hover,
+      t-switch, t-menuhold unchanged. ⚠ Not yet seen on the real session.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),

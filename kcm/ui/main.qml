@@ -169,6 +169,24 @@ KCM.SimpleKCM {
             }
         }
 
+        RowLayout {
+            spacing: 0
+
+            QQC2.CheckBox {
+                text: i18nc("@option:check", "Show the Dock over fullscreen windows")
+                checked: root.settings.revealOverFullscreen
+                onToggled: root.settings.revealOverFullscreen = checked
+
+                KCM.SettingStateBinding {
+                    configObject: root.settings
+                    settingName: "revealOverFullscreen"
+                }
+            }
+            Kirigami.ContextualHelpButton {
+                toolTipText: i18nc("@info:tooltip", "Rest the pointer on the bottom edge of the screen to bring the Dock up over a fullscreen game or video. Off, it stays out of the way until the window leaves fullscreen.")
+            }
+        }
+
         QQC2.ComboBox {
             Kirigami.FormData.label: i18nc("@label:listbox", "Show the Dock on:")
             textRole: "text"
