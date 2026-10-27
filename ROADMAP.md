@@ -479,6 +479,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       harness only with the group order reversed by a temporary patch (stand-ins always give [Battle.net,
       Hearthstone]): previous commit → Battle.net active after the second click; now → Hearthstone. t-hover,
       t-switch, t-menuhold unchanged. ⚠ Not yet seen on the real session.
+- [x] Tagged **v0.1.5** (2026-10-27; 0.1.5 in CMake and the PKGBUILD): showing over fullscreen windows is a
+      setting (off by default), click-to-minimise restores the game rather than its launcher.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
