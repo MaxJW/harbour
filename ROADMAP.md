@@ -481,6 +481,14 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       t-switch, t-menuhold unchanged. ⚠ Not yet seen on the real session.
 - [x] Tagged **v0.1.5** (2026-10-27; 0.1.5 in CMake and the PKGBUILD): showing over fullscreen windows is a
       setting (off by default), click-to-minimise restores the game rather than its launcher.
+- [x] Fan sat left of the stack on the portrait screen (user, 2026-10-27). Not the physical-size scaling: the
+      fan's window was 640 px wide, centred on the stack, though the fan reaches only ~150 px right of it. On a
+      1080 px screen with Downloads near the dock's right end the window ran off the edge and KWin slid it back
+      (slide_x), taking the fan with it. The fan window now spans `fanLeft` (320, room for names) left of the
+      stack and `fanRight` right: half the "Open in Dolphin" pill + the arc's drift at the top + 16 px. Reproduced
+      in the harness at 1080×1920 (Downloads at x=805): first icon at ~762 before, over the stack now. 1920×1080
+      fan looks as before; t-anim, t-stress pass. ⚠ A stack within ~150 px of the right edge still slides (e.g. a
+      very wide dock on the portrait screen). Seen working on the real session (user: "Works perfectly").
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),

@@ -26,13 +26,20 @@ T.Menu {
     readonly property real fanIcon: Math.round(dock.iconSize * 0.86)
     readonly property real fanStep: fanIcon + 8
     readonly property real fanRadius: 2600
-    readonly property real fanWidth: 640
+    // The window reaches fanLeft to the left of the stack (room for long names) but
+    // only as far right as the fan goes, so it stays clear of the screen's right edge:
+    // a popup that doesn't fit is slid back on screen, away from the stack.
+    readonly property real fanLeft: 320
+    readonly property real fanPillMax: fanLeft - fanIcon / 2 - 24
+    readonly property string folderLinkText: qsTr("Open in Dolphin  ›")
+    readonly property real fanRight: Math.ceil(Math.max(Math.min(folderLinkMetrics.width + 26, fanPillMax) / 2, fanIcon * 0.54)
+                                               + arcX((entryCount + 1) * fanStep) + 16)
 
     readonly property int gridColumns: Math.max(1, Math.min(5, entryCount))
     readonly property int gridRows: Math.max(1, Math.min(3, Math.ceil(entryCount / gridColumns)))
     readonly property real gridCell: 104
 
-    readonly property real contentWidth_: mode === "fan" ? fanWidth : gridColumns * gridCell + 32
+    readonly property real contentWidth_: mode === "fan" ? fanLeft + fanRight : gridColumns * gridCell + 32
     readonly property real contentHeight_: mode === "fan" ? (entryCount + 1) * fanStep + 28
                                                          : 48 + gridRows * gridCell + 52
 
@@ -51,6 +58,14 @@ T.Menu {
 
     SystemPalette {
         id: palette
+    }
+
+    TextMetrics {
+        id: folderLinkMetrics
+
+        text: stackPopup.folderLinkText
+        font.pixelSize: 13
+        font.weight: Font.DemiBold
     }
 
     // Everything lives inside the content item: children declared on a Menu itself
@@ -86,7 +101,7 @@ T.Menu {
 
                     // Height above the stack, and where the arc puts the item.
                     readonly property real rise: (index + 1) * stackPopup.fanStep
-                    readonly property real arcX: stackPopup.fanRadius - Math.sqrt(stackPopup.fanRadius * stackPopup.fanRadius - rise * rise)
+                    readonly property real arcX: stackPopup.arcX(rise)
                     readonly property real tilt: Math.asin(rise / stackPopup.fanRadius) * 180 / Math.PI * 0.7
 
                     readonly property bool hovered: hoverArea.containsMouse
@@ -99,7 +114,7 @@ T.Menu {
                     opacity: Math.min(1, progress * 2)
 
                     transform: Rotation {
-                        origin.x: fanItem.width / 2
+                        origin.x: stackPopup.fanLeft
                         origin.y: fanItem.height / 2
                         angle: fanItem.tilt * fanItem.eased
                     }
@@ -115,8 +130,8 @@ T.Menu {
 
                         width: (fanItem.isFolderLink ? pill.width : pill.width + 10 + stackPopup.fanIcon) + 2 * margin
                         height: parent.height
-                        // The icon centred in the fan item, as before; "Open in Dolphin" centred.
-                        x: fanItem.isFolderLink ? (parent.width - width) / 2 : (parent.width + stackPopup.fanIcon) / 2 + margin - width
+                        // The icon centred over the stack; "Open in Dolphin" centred.
+                        x: fanItem.isFolderLink ? stackPopup.fanLeft - width / 2 : stackPopup.fanLeft + stackPopup.fanIcon / 2 + margin - width
                         layer.enabled: true
                         layer.smooth: true
 
@@ -144,10 +159,10 @@ T.Menu {
                         Rectangle {
                             id: pill
 
-                            readonly property string name: fanItem.isFolderLink ? qsTr("Open in Dolphin  ›") : fanItem.entry.name
+                            readonly property string name: fanItem.isFolderLink ? stackPopup.folderLinkText : fanItem.entry.name
 
                             height: pillText.implicitHeight + 8
-                            width: Math.min(pillText.implicitWidth + 22, stackPopup.fanWidth / 2 - stackPopup.fanIcon / 2 - 24)
+                            width: Math.min(pillText.implicitWidth + 22, stackPopup.fanPillMax)
                             radius: height / 2
                             anchors.verticalCenter: parent.verticalCenter
                             x: face.margin
@@ -353,6 +368,11 @@ T.Menu {
         }
     }
 
+    // How far right of the stack the arc has drifted at a given height.
+    function arcX(rise: real): real {
+        return fanRadius - Math.sqrt(fanRadius * fanRadius - rise * rise);
+    }
+
     function iconFor(url: url, isDir: bool): url {
         // Files show their preview (photos, PDFs, videos...) or else their type's icon.
         return isDir ? DockTools.iconUrl(DockTools.iconNameForUrl(url), false, DockTools.iconThemeRevision) : DockTools.previewUrl(url);
@@ -379,7 +399,7 @@ T.Menu {
         // Above the stack as drawn (it stays magnified while the popup is open).
         dock.holdMagnification();
         const top = stack.shownItem.mapToItem(dock.menuAnchor.parent, stack.width / 2, 0);
-        const p = Qt.point(top.x - contentWidth_ / 2, top.y - 4);
+        const p = Qt.point(top.x - (mode === "fan" ? fanLeft : contentWidth_ / 2), top.y - 4);
         dock.menuAnchor.x = p.x;
         dock.menuAnchor.y = p.y;
         dock.menuAnchor.width = contentWidth_;
