@@ -489,6 +489,8 @@ https://github.com/MaxJW/harbour. Next: pinned folders in settings, then the ani
       in the harness at 1080×1920 (Downloads at x=805): first icon at ~762 before, over the stack now. 1920×1080
       fan looks as before; t-anim, t-stress pass. ⚠ A stack within ~150 px of the right edge still slides (e.g. a
       very wide dock on the portrait screen). Seen working on the real session (user: "Works perfectly").
+- [x] Tagged **v0.1.6** (2026-10-27; 0.1.6 in CMake and the PKGBUILD): the stack fan stays over the stack
+      near the screen's right edge.
 - HDT autostart (user asked to stop it): it came from `~/Games/HDT/hdt-autostart.sh` in the Battle.net
   shortcut's Steam launch options; the user removed it there themselves. Outside the repo.
 - Spotify's label: the user's own override `~/.local/share/applications/spotify-launcher.desktop` (Name=Spotify),
